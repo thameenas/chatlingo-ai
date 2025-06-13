@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kannada WhatsApp Bot - Web Chat</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 0; padding: 0; height: 100vh; }
+        .container { max-width: 500px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; padding: 24px; height: calc(100vh - 80px); display: flex; flex-direction: column; }
+        .chat-box { flex: 1; overflow-y: auto; border: 1px solid #eee; border-radius: 6px; padding: 12px; background: #fafbfc; margin-bottom: 16px; }
+        .msg { 
+            margin: 8px 0; 
+            display: flex; 
+        }
+        .msg.user { 
+            justify-content: flex-end; 
+        }
+        .msg.bot { 
+            justify-content: flex-start; 
+        }
+        .msg-bubble {
+            max-width: 80%;
+            padding: 10px 16px;
+            border-radius: 16px;
+            border: 1.5px solid #d1d5db;
+            background: #e3f2fd;
+            color: #1976d2;
+            box-shadow: 0 1px 3px #0001;
+            word-break: break-word;
+            font-size: 1rem;
+        }
+        .msg.bot .msg-bubble {
+            background: #f1f1f1;
+            color: #333;
+            border-color: #e0e0e0;
+        }
+        .msg.user .msg-bubble {
+            background: #e3f2fd;
+            color: #1976d2;
+            border-color: #90caf9;
+        }
+        .controls { display: flex; gap: 8px; }
+        input[type=text] { flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #ccc; }
+        button { padding: 8px 16px; border: none; border-radius: 4px; background: #1976d2; color: #fff; cursor: pointer; }
+        button:disabled { background: #aaa; }
+    </style>
+    <script src="/static/refreshui.js"></script>
+
+</head>
+<body>
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2>Kannada InProgress WhatsApp Bot (Web)</h2>
+            <button onclick="refreshUI()" style="background: #4caf50;">Refresh UI</button>
+        </div>
+        <div class="chat-box" id="chatBox"></div>
+        <div class="controls">
+            <input type="text" id="userInput" placeholder="Type your message..." autofocus />
+            <button onclick="sendMessage()">Send</button>
+            <button onclick="resetChat()" style="background:#e53935">Reset</button>
+        </div>
+    </div>
+    <script src="/static/script.js"></script>
+</body>
+</html> 
