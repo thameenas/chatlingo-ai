@@ -1,7 +1,6 @@
 from collections import defaultdict
 from flask import Flask, request, jsonify
 from twilio.twiml.messaging_response import MessagingResponse
-from openai import OpenAI
 import os
 from dotenv import load_dotenv
 import google.generativeai as genai
