@@ -37,44 +37,48 @@ python app.py
 
 The server will start at `http://localhost:5000`
 
-## Deployment
+## Deployment on Render
 
-### Heroku
+1. Create a Render account at https://render.com
 
-1. Create a Heroku account and install the Heroku CLI
-2. Login to Heroku:
-```bash
-heroku login
-```
+2. Connect your GitHub repository to Render:
+   - Click "New +" in the Render dashboard
+   - Select "Web Service"
+   - Connect your GitHub repository
+   - Select the repository
 
-3. Create a new Heroku app:
-```bash
-heroku create your-app-name
-```
+3. Configure the deployment:
+   - Name: `kannada-whatsapp-scenarios` (or your preferred name)
+   - Environment: `Python`
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `gunicorn app:app`
+   - Plan: `Free`
 
-4. Set environment variables:
-```bash
-heroku config:set GEMINI_API_KEY=your_gemini_api_key
-heroku config:set TWILIO_ACCOUNT_SID=your_twilio_account_sid
-heroku config:set TWILIO_AUTH_TOKEN=your_twilio_auth_token
-```
+4. Set up environment variables in Render:
+   - Go to the "Environment" tab
+   - Add the following variables:
+     - `GEMINI_API_KEY`
+     - `TWILIO_ACCOUNT_SID`
+     - `TWILIO_AUTH_TOKEN`
+   - The `DATABASE_URL` will be automatically set by Render
 
 5. Deploy:
-```bash
-git push heroku main
-```
+   - Click "Create Web Service"
+   - Render will automatically deploy your application
+   - You can monitor the deployment in the "Events" tab
 
-### Other Platforms
-
-The application can be deployed to any platform that supports Python web applications (e.g., DigitalOcean, AWS, Google Cloud Platform). Make sure to:
-
-1. Set up the required environment variables
-2. Use gunicorn as the WSGI server
-3. Configure the platform to use the `Procfile`
+6. Access your application:
+   - Once deployed, Render will provide a URL like `https://kannada-whatsapp-scenarios.onrender.com`
+   - Update your Twilio webhook URL to point to this new URL
 
 ## Database
 
-The application uses SQLite for data persistence. The database file (`chat.db`) will be created automatically when the application starts.
+The application uses PostgreSQL for data persistence. The database is automatically provisioned by Render and includes:
+
+- `last_day_number` table: Stores the last day number for each phone number
+- `chat_history` table: Stores the chat history with timestamps
+
+The database connection is automatically configured using the `DATABASE_URL` environment variable provided by Render.
 
 ## API Endpoints
 

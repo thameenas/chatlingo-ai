@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 import json
 import re
-from db import init_db, get_last_day_number, set_last_day_number, get_chat_history, add_chat_message, clear_chat_history
+from models import init_db, get_last_day_number, set_last_day_number, get_chat_history, add_chat_message, clear_chat_history
 
 
 # Load environment variables
