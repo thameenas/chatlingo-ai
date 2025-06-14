@@ -1,4 +1,4 @@
-# Kannada WhatsApp Bot
+# Language WhatsApp Bot
 
 A WhatsApp bot that provides interactive scenarios in Kannada language.
 
