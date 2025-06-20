@@ -4,4 +4,4 @@ google-generativeai==0.3.2
 twilio==8.12.0
 gunicorn==21.2.0
 psycopg2-binary==2.9.9
-SQLAlchemy==2.0.27 
+SQLAlchemy>=1.4,<2.0 
