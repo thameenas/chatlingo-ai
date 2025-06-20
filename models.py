@@ -3,6 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
 from datetime import datetime
+import hashlib
 
 # Create base class for declarative models
 Base = declarative_base()
@@ -38,11 +39,16 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 def init_db():
     Base.metadata.create_all(bind=engine)
 
+# Utility function to hash phone numbers
+def hash_phone(phone: str) -> str:
+    return hashlib.sha256(phone.encode('utf-8')).hexdigest()
+
 # Database operations
 def get_last_day_number(phone: str) -> int:
     db = SessionLocal()
     try:
-        result = db.query(LastDayNumber).filter(LastDayNumber.phone == phone).first()
+        phone_hash = hash_phone(phone)
+        result = db.query(LastDayNumber).filter(LastDayNumber.phone == phone_hash).first()
         return result.day_number if result else None
     finally:
         db.close()
@@ -50,7 +56,8 @@ def get_last_day_number(phone: str) -> int:
 def set_last_day_number(phone: str, day_number: int):
     db = SessionLocal()
     try:
-        record = LastDayNumber(phone=phone, day_number=day_number)
+        phone_hash = hash_phone(phone)
+        record = LastDayNumber(phone=phone_hash, day_number=day_number)
         db.merge(record)  # merge will update if exists, insert if not
         db.commit()
     finally:
@@ -59,8 +66,9 @@ def set_last_day_number(phone: str, day_number: int):
 def get_chat_history(phone: str) -> list:
     db = SessionLocal()
     try:
+        phone_hash = hash_phone(phone)
         history = db.query(ChatHistory)\
-            .filter(ChatHistory.phone == phone)\
+            .filter(ChatHistory.phone == phone_hash)\
             .order_by(ChatHistory.timestamp.asc())\
             .all()
         return [{'role': msg.role, 'parts': msg.message} for msg in history]
@@ -70,7 +78,8 @@ def get_chat_history(phone: str) -> list:
 def add_chat_message(phone: str, role: str, message: str):
     db = SessionLocal()
     try:
-        chat = ChatHistory(phone=phone, role=role, message=message)
+        phone_hash = hash_phone(phone)
+        chat = ChatHistory(phone=phone_hash, role=role, message=message)
         db.add(chat)
         db.commit()
     finally:
@@ -79,7 +88,8 @@ def add_chat_message(phone: str, role: str, message: str):
 def clear_chat_history(phone: str):
     db = SessionLocal()
     try:
-        db.query(ChatHistory).filter(ChatHistory.phone == phone).delete()
+        phone_hash = hash_phone(phone)
+        db.query(ChatHistory).filter(ChatHistory.phone == phone_hash).delete()
         db.commit()
     finally:
         db.close() 
