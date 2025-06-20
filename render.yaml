@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: kannada-whatsapp-scenarios
+    name: chatlingo-ai-scenarios
     runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app
@@ -15,11 +15,11 @@ services:
         sync: false
       - key: DATABASE_URL
         fromDatabase:
-          name: kannada-whatsapp-db
+          name: chatlingo-ai-db
           property: connectionString
 
 databases:
-  - name: kannada-whatsapp-db
-    databaseName: kannada_whatsapp
-    user: kannada_whatsapp_user
+  - name: chatlingo-ai-db
+    databaseName: chatlingo-ai
+    user: chatlingo_ai_user
     plan: free 

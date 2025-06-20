@@ -24,12 +24,11 @@ class ChatHistory(Base):
 
 # Database URL configuration
 def get_database_url():
-    if os.getenv('DATABASE_URL'):
-        # Render PostgreSQL URL
-        return os.getenv('DATABASE_URL')
+    db_url = os.getenv('DATABASE_URL')
+    if db_url:
+        return db_url
     else:
-        # Local SQLite database
-        return 'sqlite:///chat.db'
+        raise RuntimeError('DATABASE_URL environment variable is not set. Please set it to your PostgreSQL connection string.')
 
 # Create engine and session
 engine = create_engine(get_database_url())

@@ -7,7 +7,7 @@ A WhatsApp bot that provides interactive scenarios in Kannada language.
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd kannada-whatsapp-bot
+cd chatlingo-ai
 ```
 
 2. Create and activate a virtual environment:
@@ -35,7 +35,7 @@ Run the development server:
 python app.py
 ```
 
-The server will start at `http://localhost:5000`
+The server will start at `http://localhost:8000`
 
 ## Deployment on Render
 
@@ -48,7 +48,7 @@ The server will start at `http://localhost:5000`
    - Select the repository
 
 3. Configure the deployment:
-   - Name: `kannada-whatsapp-scenarios` (or your preferred name)
+   - Name: `chatlingo-ai` (or your preferred name)
    - Environment: `Python`
    - Build Command: `pip install -r requirements.txt`
    - Start Command: `gunicorn app:app`
@@ -68,7 +68,7 @@ The server will start at `http://localhost:5000`
    - You can monitor the deployment in the "Events" tab
 
 6. Access your application:
-   - Once deployed, Render will provide a URL like `https://kannada-whatsapp-scenarios.onrender.com`
+   - Once deployed, Render will provide a URL like `https://chatlingo.ai.onrender.com`
    - Update your Twilio webhook URL to point to this new URL
 
 ## Database
