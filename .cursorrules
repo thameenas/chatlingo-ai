@@ -1,0 +1,7 @@
+# ChatLingo AI - Cursor Rules
+
+## Project Context
+Refer to `PROJECT_CONTEXT.md` for complete application overview, architecture, and functionality details.
+
+## Automatic Context Reference
+When making code changes, always review `PROJECT_CONTEXT.md` first to ensure changes align with the application's architecture, functionality, and design patterns. Apply the context from this file to guide all modifications.
