@@ -1,6 +1,21 @@
 # Language WhatsApp Bot
 
-A WhatsApp bot that provides interactive scenarios in Kannada language with automatic daily nudges.
+A WhatsApp bot that provides interactive scenarios in Kannada language with automatic daily nudges, built using the Model-Service-Controller-Repository (MSCR) architecture.
+
+## Architecture
+
+This application follows the **Model-Service-Controller-Repository (MSCR)** pattern:
+
+- **Models**: Data structures and database entities
+- **Services**: Business logic and external integrations
+- **Controllers**: HTTP request/response handling
+- **Repositories**: Data access and persistence layer
+
+### Architecture Benefits:
+- **Separation of Concerns**: Each layer has a specific responsibility
+- **Testability**: Easy to unit test individual components
+- **Maintainability**: Changes in one layer don't affect others
+- **Scalability**: Easy to add new features or modify existing ones
 
 ## Setup
 
@@ -42,11 +57,6 @@ The server will start at `http://localhost:8000`
 ## Daily Nudge Feature
 
 The application automatically sends daily nudges to all users at **9:00 AM IST** (3:30 AM UTC). 
-
-### Architecture:
-- **`scheduler.py`**: Contains the `NudgeScheduler` class that handles all scheduling logic
-- **`app.py`**: Main Flask application that initializes and uses the scheduler
-- **APScheduler**: Background job scheduling system
 
 ### How it works:
 - **Scheduled Job**: Runs daily at 9:00 AM IST using APScheduler
@@ -130,15 +140,55 @@ The database connection is automatically configured using the `DATABASE_URL` env
 
 ```
 chatlingo-ai/
-├── app.py              # Main Flask application
-├── scheduler.py        # NudgeScheduler class and scheduling logic
-├── models.py           # Database models and operations
-├── scenarios.json      # 30-day learning scenarios
-├── prompt_template.txt # AI prompt template
-├── test_nudges.py      # Test script for nudge functionality
-├── requirements.txt    # Python dependencies
-└── static/            # Web interface files
+├── app.py                    # Main Flask application (routing only)
+├── scheduler.py             # Background job scheduler
+├── test_nudges.py           # Test script for nudge functionality
+├── requirements.txt         # Python dependencies
+├── scenarios.json           # 30-day learning scenarios
+├── prompt_template.txt      # AI prompt template
+├── models/                  # Data models layer
+│   ├── __init__.py
+│   ├── user.py             # User-related models
+│   └── chat.py             # Chat-related models
+├── repositories/            # Data access layer
+│   ├── __init__.py
+│   ├── database.py         # Database configuration and session management
+│   ├── user_repository.py  # User data operations
+│   └── chat_repository.py  # Chat data operations
+├── services/               # Business logic layer
+│   ├── __init__.py
+│   ├── llm_service.py      # LLM/Gemini integration
+│   └── chat_service.py     # Chat and nudge business logic
+├── controllers/            # HTTP request/response layer
+│   ├── __init__.py
+│   └── chat_controller.py  # Chat and nudge HTTP endpoints
+└── static/                 # Web interface files
+    ├── index.html
+    ├── script.js
+    └── refreshui.js
 ```
+
+## Architecture Layers
+
+### Models Layer (`models/`)
+- **`user.py`**: `LastDayNumber` model for user progress tracking
+- **`chat.py`**: `ChatHistory` model for message storage
+
+### Repositories Layer (`repositories/`)
+- **`database.py`**: Database configuration and session management
+- **`user_repository.py`**: Handles all user-related database operations
+- **`chat_repository.py`**: Handles all chat-related database operations
+
+### Services Layer (`services/`)
+- **`llm_service.py`**: Manages LLM/Gemini integration and prompt generation
+- **`chat_service.py`**: Orchestrates chat functionality, nudge sending, and user interactions
+
+### Controllers Layer (`controllers/`)
+- **`chat_controller.py`**: Handles HTTP requests for chat functionality and nudge operations
+
+### Infrastructure
+- **`scheduler.py`**: Background job scheduling for daily nudges
+- **`app.py`**: Main Flask application with route definitions
 
 ## License
 
