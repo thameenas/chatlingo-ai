@@ -1,6 +1,6 @@
 # Language WhatsApp Bot
 
-A WhatsApp bot that provides interactive scenarios in Kannada language.
+A WhatsApp bot that provides interactive scenarios in Kannada language with automatic daily nudges.
 
 ## Setup
 
@@ -26,6 +26,8 @@ pip install -r requirements.txt
 GEMINI_API_KEY=your_gemini_api_key
 TWILIO_ACCOUNT_SID=your_twilio_account_sid
 TWILIO_AUTH_TOKEN=your_twilio_auth_token
+TWILIO_PHONE_NUMBER=your_twilio_whatsapp_number
+DATABASE_URL=your_postgresql_connection_string
 ```
 
 ## Local Development
@@ -36,6 +38,36 @@ python app.py
 ```
 
 The server will start at `http://localhost:8000`
+
+## Daily Nudge Feature
+
+The application automatically sends daily nudges to all users at **9:00 AM IST** (3:30 AM UTC). 
+
+### Architecture:
+- **`scheduler.py`**: Contains the `NudgeScheduler` class that handles all scheduling logic
+- **`app.py`**: Main Flask application that initializes and uses the scheduler
+- **APScheduler**: Background job scheduling system
+
+### How it works:
+- **Scheduled Job**: Runs daily at 9:00 AM IST using APScheduler
+- **User Discovery**: Finds all users from the `last_day_number` table
+- **Personalized Content**: Sends the first prompt of each user's current day
+- **WhatsApp Delivery**: Uses Twilio to send messages directly to users
+
+### Testing Nudges:
+You can manually trigger nudges for testing:
+```bash
+# Using curl
+curl -X POST http://localhost:8000/api/nudges/send
+
+# Or run the test script
+python test_nudges.py
+```
+
+### Nudge Behavior:
+- Users receive the actual first prompt of their daily lesson
+- No need to type "start" or "day X" - the lesson begins automatically
+- Messages are sent via WhatsApp using the same Twilio integration
 
 ## Deployment on Render
 
@@ -60,6 +92,7 @@ The server will start at `http://localhost:8000`
      - `GEMINI_API_KEY`
      - `TWILIO_ACCOUNT_SID`
      - `TWILIO_AUTH_TOKEN`
+     - `TWILIO_PHONE_NUMBER`
    - The `DATABASE_URL` will be automatically set by Render
 
 5. Deploy:
@@ -75,7 +108,7 @@ The server will start at `http://localhost:8000`
 
 The application uses PostgreSQL for data persistence. The database is automatically provisioned by Render and includes:
 
-- `last_day_number` table: Stores the last day number for each phone number
+- `last_day_number` table: Stores the last day number and original phone number for each user
 - `chat_history` table: Stores the chat history with timestamps
 
 The database connection is automatically configured using the `DATABASE_URL` environment variable provided by Render.
@@ -89,6 +122,23 @@ The database connection is automatically configured using the `DATABASE_URL` env
 - `POST /api/reset`: Reset chat history
   - Body: `{"session_id": "user_id"}`
   - Returns: `{"response": "Chat history cleared"}`
+
+- `POST /api/nudges/send`: Manually trigger daily nudges (for testing)
+  - Returns: `{"response": "Daily nudges sent successfully"}`
+
+## File Structure
+
+```
+chatlingo-ai/
+├── app.py              # Main Flask application
+├── scheduler.py        # NudgeScheduler class and scheduling logic
+├── models.py           # Database models and operations
+├── scenarios.json      # 30-day learning scenarios
+├── prompt_template.txt # AI prompt template
+├── test_nudges.py      # Test script for nudge functionality
+├── requirements.txt    # Python dependencies
+└── static/            # Web interface files
+```
 
 ## License
 

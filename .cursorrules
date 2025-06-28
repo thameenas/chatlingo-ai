@@ -1,7 +1,24 @@
 # ChatLingo AI - Cursor Rules
 
 ## Project Context
-Refer to `PROJECT_CONTEXT.md` for complete application overview, architecture, and functionality details.
+Refer to `project_context.md` for complete application overview, architecture, and functionality details.
+
+## Development Rules
+
+**ALWAYS provide a comprehensive plan before implementing any new feature. Implement the feature only after the plan is accepted. The plan should be in format:**
+1. **Database Schema Changes** - What tables/models need to be added/modified
+2. **Service Architecture** - How the new functionality will be structured
+3. **API Endpoints** - What new endpoints are needed
+4. **Integration Points** - How it connects with existing systems
+5. **User Experience Flow** - How users will interact with the feature
+7. **Error Handling** - How to handle edge cases and failures
+
+**Example Plan Structure:**
+- Feature Overview
+- Technical Requirements
+- Database Changes
+- API Design
+- User Flow
 
 ## Automatic Context Reference
-When making code changes, always review `PROJECT_CONTEXT.md` first to ensure changes align with the application's architecture, functionality, and design patterns. Apply the context from this file to guide all modifications.
+When making code changes, always review `project_context.md` first to ensure changes align with the application's architecture, functionality, and design patterns. Apply the context from this file to guide all modifications.

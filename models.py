@@ -4,14 +4,17 @@ from sqlalchemy.orm import sessionmaker
 import os
 from datetime import datetime
 import hashlib
+from dotenv import load_dotenv
 
 # Create base class for declarative models
 Base = declarative_base()
+load_dotenv()
 
 class LastDayNumber(Base):
     __tablename__ = 'last_day_number'
     
-    phone = Column(String, primary_key=True)
+    phone = Column(String, primary_key=True)  # This will be the hashed phone
+    original_phone = Column(String, nullable=False)  # Store original phone for WhatsApp
     day_number = Column(Integer, nullable=False)
 
 class ChatHistory(Base):
@@ -57,7 +60,7 @@ def set_last_day_number(phone: str, day_number: int):
     db = SessionLocal()
     try:
         phone_hash = hash_phone(phone)
-        record = LastDayNumber(phone=phone_hash, day_number=day_number)
+        record = LastDayNumber(phone=phone_hash, original_phone=phone, day_number=day_number)
         db.merge(record)  # merge will update if exists, insert if not
         db.commit()
     finally:

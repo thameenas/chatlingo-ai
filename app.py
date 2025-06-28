@@ -7,7 +7,9 @@ import google.generativeai as genai
 import json
 import re
 from models import init_db, get_last_day_number, set_last_day_number, get_chat_history, add_chat_message, clear_chat_history
-
+from twilio.rest import Client
+from datetime import datetime
+from scheduler import NudgeScheduler
 
 # Load environment variables
 load_dotenv()
@@ -17,8 +19,15 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 model = genai.GenerativeModel("gemini-2.5-flash-preview-05-20")
 prompt_template = ""
 
+# Initialize Twilio client for sending nudges
+twilio_client = Client(os.getenv("TWILIO_ACCOUNT_SID"), os.getenv("TWILIO_AUTH_TOKEN"))
+twilio_phone_number = os.getenv("TWILIO_PHONE_NUMBER")
+
 # Initialize database
 init_db()
+
+# Initialize nudge scheduler
+nudge_scheduler = None
 
 # 📚 Load 30-day scenarios
 with open("scenarios.json", "r", encoding="utf-8") as f:
@@ -34,6 +43,12 @@ def build_prompt(day_number):
         scenario_title = scenarios[day_number - 1]
         return prompt_template.format(day_number=day_number, scenario_title=scenario_title)
     return None
+
+def initialize_scheduler():
+    """Initialize and start the nudge scheduler"""
+    global nudge_scheduler
+    nudge_scheduler = NudgeScheduler(twilio_client, twilio_phone_number, build_prompt)
+    nudge_scheduler.start_scheduler()
 
 def process_user_message(user_msg, session_id):
     user_msg = user_msg.strip().lower()
@@ -95,10 +110,25 @@ def reset():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/nudges/send", methods=["POST"])
+def manual_send_nudges():
+    """Manually trigger daily nudges for testing"""
+    try:
+        if nudge_scheduler:
+            nudge_scheduler.send_daily_nudges()
+            return jsonify({"response": "Daily nudges sent successfully"})
+        else:
+            return jsonify({"error": "Scheduler not initialized"}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/")
 def index():
     return app.send_static_file('index.html')
 
 if __name__ == "__main__":
+    # Initialize the scheduler when the app starts
+    initialize_scheduler()
+    
     port = int(os.environ.get("PORT", 8000))
     app.run(host="0.0.0.0", port=port)
