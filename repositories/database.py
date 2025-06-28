@@ -3,6 +3,9 @@ from sqlalchemy.orm import sessionmaker
 import os
 from models.user import Base as UserBase
 from models.chat import Base as ChatBase
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def get_database_url():
     """Get database URL from environment variable"""
