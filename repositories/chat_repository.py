@@ -31,14 +31,3 @@ class ChatRepository:
             db.commit()
         finally:
             db.close()
-    
-    def clear_chat_history(self, phone: str):
-        """Clear chat history for a user"""
-        db = self.session_factory()
-        try:
-            phone_hash = hash_phone(phone)
-            
-            db.query(ChatHistory).filter(ChatHistory.phone == phone_hash).delete()
-            db.commit()
-        finally:
-            db.close() 

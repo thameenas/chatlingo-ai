@@ -67,10 +67,6 @@ class ChatService:
         
         return response
     
-    def reset_chat_history(self, phone):
-        """Reset chat history for a user"""
-        self.chat_repository.clear_chat_history(phone)
-    
     def get_user_progress(self, phone):
         """Get user's current day number"""
         return self.user_repository.get_last_day_number(phone)

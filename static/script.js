@@ -22,49 +22,20 @@ function sendMessage() {
     if (!msg) return;
     appendMessage(msg, 'user');
     input.value = '';
-    fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_msg: msg, session_id: sessionId })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.response) {
-            appendMessage(data.response, 'bot');
-        } else if (data.error) {
-            appendMessage('⚠️ ' + data.error, 'bot');
-        }
-    })
-    .catch(err => {
-        appendMessage('⚠️ Network error', 'bot');
-    });
+    // API endpoint removed
+    appendMessage('Web chat API has been removed', 'bot');
 }
 
 function resetChat() {
-    // Clear chat history in UI and backend
+    // Clear chat history in UI only
     chatHistory = [];
     document.getElementById('chatBox').innerHTML = '';
     // New session id for a fresh chat
     sessionId = 'web_' + Math.random().toString(36).slice(2);
     localStorage.setItem('session_id', sessionId);
     
-    // Call the reset API endpoint
-    fetch('/api/reset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: sessionId })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.error) {
-            appendMessage('⚠️ ' + data.error, 'bot');
-        } else {
-            appendMessage('Chat reset. Type "start" to begin again.', 'bot');
-        }
-    })
-    .catch(err => {
-        appendMessage('⚠️ Network error', 'bot');
-    });
+    // Reset API endpoint removed
+    appendMessage('Chat reset. Web chat API has been removed.', 'bot');
 }
 
 

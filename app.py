@@ -36,16 +36,6 @@ def whatsapp_webhook():
     """WhatsApp webhook endpoint"""
     return chat_controller.handle_whatsapp_webhook()
 
-@app.route("/api/chat", methods=["POST"])
-def chat():
-    """Web chat interface endpoint"""
-    return chat_controller.handle_web_chat()
-
-@app.route("/api/reset", methods=["POST"])
-def reset():
-    """Reset chat history endpoint"""
-    return chat_controller.handle_reset_chat()
-
 @app.route("/api/nudges/send", methods=["POST"])
 def manual_send_nudges():
     """Manual nudge trigger endpoint"""
