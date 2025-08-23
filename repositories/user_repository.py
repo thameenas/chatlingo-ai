@@ -1,21 +1,17 @@
 from sqlalchemy.orm import sessionmaker
 from models.user import User
-import hashlib
 from .database import get_session
+from utils.utils import hash_phone
 
 class UserRepository:
     def __init__(self):
         self.session_factory = get_session
     
-    def hash_phone(self, phone: str) -> str:
-        """Hash phone number for security"""
-        return hashlib.sha256(phone.encode('utf-8')).hexdigest()
-    
     def get_user(self, phone: str):
         """Get user by phone number"""
         db = self.session_factory()
         try:
-            phone_hash = self.hash_phone(phone)
+            phone_hash = hash_phone(phone)
             return db.query(User).filter(User.phone == phone_hash).first()
         finally:
             db.close()
@@ -29,7 +25,7 @@ class UserRepository:
         """Mark user as no longer new"""
         db = self.session_factory()
         try:
-            phone_hash = self.hash_phone(phone)
+            phone_hash = hash_phone(phone)
             user = db.query(User).filter(User.phone == phone_hash).first()
             if user:
                 user.is_new_user = False
@@ -46,7 +42,7 @@ class UserRepository:
         """Set the last day number for a user"""
         db = self.session_factory()
         try:
-            phone_hash = self.hash_phone(phone)
+            phone_hash = hash_phone(phone)
             user = db.query(User).filter(User.phone == phone_hash).first()
             if user:
                 user.day_number = day_number

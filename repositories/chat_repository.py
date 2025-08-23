@@ -1,5 +1,6 @@
 from models.chat import ChatHistory
 from .database import get_session
+from utils.utils import hash_phone
 
 class ChatRepository:
     def __init__(self):
@@ -9,9 +10,7 @@ class ChatRepository:
         """Get chat history for a user"""
         db = self.session_factory()
         try:
-            from repositories.user_repository import UserRepository
-            user_repo = UserRepository()
-            phone_hash = user_repo.hash_phone(phone)
+            phone_hash = hash_phone(phone)
             
             history = db.query(ChatHistory)\
                 .filter(ChatHistory.phone == phone_hash)\
@@ -25,9 +24,7 @@ class ChatRepository:
         """Add a chat message to the database"""
         db = self.session_factory()
         try:
-            from repositories.user_repository import UserRepository
-            user_repo = UserRepository()
-            phone_hash = user_repo.hash_phone(phone)
+            phone_hash = hash_phone(phone)
             
             chat = ChatHistory(phone=phone_hash, role=role, message=message)
             db.add(chat)
@@ -39,9 +36,7 @@ class ChatRepository:
         """Clear chat history for a user"""
         db = self.session_factory()
         try:
-            from repositories.user_repository import UserRepository
-            user_repo = UserRepository()
-            phone_hash = user_repo.hash_phone(phone)
+            phone_hash = hash_phone(phone)
             
             db.query(ChatHistory).filter(ChatHistory.phone == phone_hash).delete()
             db.commit()
