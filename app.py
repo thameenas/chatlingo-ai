@@ -26,8 +26,13 @@ def initialize_scheduler():
     nudge_scheduler.start_scheduler()
 
 # Routes
-@app.route("/webhook", methods=["POST"])
-def whatsapp_reply():
+@app.route("/whatsapp-webhook", methods=["GET"])
+def verify_webhook():
+    """WhatsApp webhook verification endpoint"""
+    return chat_controller.verify_whatsapp_webhook()
+
+@app.route("/whatsapp-webhook", methods=["POST"])
+def whatsapp_webhook():
     """WhatsApp webhook endpoint"""
     return chat_controller.handle_whatsapp_webhook()
 

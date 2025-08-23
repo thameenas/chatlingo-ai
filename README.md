@@ -1,6 +1,6 @@
 # Language WhatsApp Bot
 
-A WhatsApp bot that provides interactive scenarios in Kannada language with automatic daily nudges, built using the Model-Service-Controller-Repository (MSCR) architecture.
+A WhatsApp bot that provides interactive scenarios in Kannada language with automatic daily nudges, built using the Model-Service-Controller-Repository (MSCR) architecture. This application uses the WhatsApp Cloud API for messaging.
 
 ## Architecture
 
@@ -39,9 +39,9 @@ pip install -r requirements.txt
 4. Create a `.env` file with the following variables:
 ```
 GEMINI_API_KEY=your_gemini_api_key
-TWILIO_ACCOUNT_SID=your_twilio_account_sid
-TWILIO_AUTH_TOKEN=your_twilio_auth_token
-TWILIO_PHONE_NUMBER=your_twilio_whatsapp_number
+WHATSAPP_API_TOKEN=your_whatsapp_api_token
+WHATSAPP_PHONE_NUMBER_ID=your_whatsapp_phone_number_id
+WHATSAPP_VERIFY_TOKEN=your_custom_verification_token
 DATABASE_URL=your_postgresql_connection_string
 ```
 
@@ -62,7 +62,7 @@ The application automatically sends daily nudges to all users at **9:00 AM IST**
 - **Scheduled Job**: Runs daily at 9:00 AM IST using APScheduler
 - **User Discovery**: Finds all users from the `last_day_number` table
 - **Personalized Content**: Sends the first prompt of each user's current day
-- **WhatsApp Delivery**: Uses Twilio to send messages directly to users
+- **WhatsApp Delivery**: Uses WhatsApp Cloud API to send messages directly to users
 
 ### Testing Nudges:
 You can manually trigger nudges for testing:
@@ -77,7 +77,7 @@ python test_nudges.py
 ### Nudge Behavior:
 - Users receive the actual first prompt of their daily lesson
 - No need to type "start" or "day X" - the lesson begins automatically
-- Messages are sent via WhatsApp using the same Twilio integration
+- Messages are sent via WhatsApp using the WhatsApp Cloud API
 
 ## Deployment on Render
 
@@ -100,9 +100,9 @@ python test_nudges.py
    - Go to the "Environment" tab
    - Add the following variables:
      - `GEMINI_API_KEY`
-     - `TWILIO_ACCOUNT_SID`
-     - `TWILIO_AUTH_TOKEN`
-     - `TWILIO_PHONE_NUMBER`
+     - `WHATSAPP_API_TOKEN`
+     - `WHATSAPP_PHONE_NUMBER_ID`
+     - `WHATSAPP_VERIFY_TOKEN`
    - The `DATABASE_URL` will be automatically set by Render
 
 5. Deploy:
@@ -112,7 +112,10 @@ python test_nudges.py
 
 6. Access your application:
    - Once deployed, Render will provide a URL like `https://chatlingo.ai.onrender.com`
-   - Update your Twilio webhook URL to point to this new URL
+   - Set up your WhatsApp webhook in the Meta Developer Dashboard:
+     - Webhook URL: `https://your-app-url.com/whatsapp-webhook`
+     - Verify token: The same value you set for `WHATSAPP_VERIFY_TOKEN`
+     - Subscribe to the `messages` webhook field
 
 ## Database
 
@@ -158,7 +161,8 @@ chatlingo-ai/
 ├── services/               # Business logic layer
 │   ├── __init__.py
 │   ├── llm_service.py      # LLM/Gemini integration
-│   └── chat_service.py     # Chat and nudge business logic
+│   ├── chat_service.py     # Chat and nudge business logic
+│   └── whatsapp_service.py # WhatsApp Cloud API integration
 ├── controllers/            # HTTP request/response layer
 │   ├── __init__.py
 │   └── chat_controller.py  # Chat and nudge HTTP endpoints
@@ -182,6 +186,7 @@ chatlingo-ai/
 ### Services Layer (`services/`)
 - **`llm_service.py`**: Manages LLM/Gemini integration and prompt generation
 - **`chat_service.py`**: Orchestrates chat functionality, nudge sending, and user interactions
+- **`whatsapp_service.py`**: Handles WhatsApp Cloud API integration for messaging
 
 ### Controllers Layer (`controllers/`)
 - **`chat_controller.py`**: Handles HTTP requests for chat functionality and nudge operations
@@ -192,4 +197,33 @@ chatlingo-ai/
 
 ## License
 
-[Your chosen license] 
+[Your chosen license]
+
+## WhatsApp Cloud API Setup
+
+### Prerequisites
+1. A Meta Developer account (https://developers.facebook.com/)
+2. A WhatsApp Business account
+3. A phone number registered with WhatsApp Business
+
+### Setup Steps
+1. Create a Meta App in the Meta Developer Dashboard
+2. Set up WhatsApp in the app
+3. Get your Phone Number ID from the WhatsApp > Getting Started page
+4. Generate a temporary access token or set up a System User for permanent access
+5. Create a custom verification token (any random string) for webhook verification
+6. Configure your webhook URL in the Meta Developer Dashboard:
+   - URL: `https://your-app-url.com/whatsapp-webhook`
+   - Verification Token: The value you set for `WHATSAPP_VERIFY_TOKEN`
+   - Subscribe to the `messages` webhook field
+
+### Testing
+1. Send a message to your WhatsApp Business number
+2. The webhook should receive the message and your application should respond
+3. Check your application logs for any errors
+
+### Troubleshooting
+- Ensure your webhook URL is publicly accessible
+- Verify that your access token has the correct permissions
+- Check that your webhook is properly verified and subscribed to the `messages` field
+- Monitor your application logs for detailed error messages

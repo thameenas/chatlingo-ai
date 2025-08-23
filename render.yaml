@@ -9,9 +9,11 @@ services:
         value: 3.11.0
       - key: GEMINI_API_KEY
         sync: false
-      - key: TWILIO_ACCOUNT_SID
+      - key: WHATSAPP_API_TOKEN
         sync: false
-      - key: TWILIO_AUTH_TOKEN
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_VERIFY_TOKEN
         sync: false
       - key: DATABASE_URL
         fromDatabase:

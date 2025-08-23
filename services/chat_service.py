@@ -1,7 +1,7 @@
 from repositories.user_repository import UserRepository
 from repositories.chat_repository import ChatRepository
 from services.llm_service import LLMService
-from twilio.rest import Client
+from services.whatsapp_service import WhatsAppService
 import os
 from datetime import datetime
 
@@ -11,8 +11,7 @@ class ChatService:
         self.user_repository = UserRepository()
         self.chat_repository = ChatRepository()
         self.llm_service = LLMService()
-        self.twilio_client = Client(os.getenv("TWILIO_ACCOUNT_SID"), os.getenv("TWILIO_AUTH_TOKEN"))
-        self.twilio_phone_number = os.getenv("TWILIO_PHONE_NUMBER")
+        self.whatsapp_service = WhatsAppService()
     
     def process_user_message(self, user_msg, phone):
         """Process user message and return AI response"""
@@ -72,14 +71,13 @@ class ChatService:
                     print(f"Sending nudge to user {original_phone} for day {day_number}")
                     print(f"Message: {prompt[:100]}...")  # Show first 100 chars
                     
-                    # Send WhatsApp message via Twilio
-                    message = self.twilio_client.messages.create(
-                        body=prompt,
-                        from_=f"whatsapp:{self.twilio_phone_number}",
-                        to=f"whatsapp:{original_phone}"
-                    )
+                    # Send WhatsApp message via WhatsApp Cloud API
+                    success, result = self.whatsapp_service.send_message(original_phone, prompt)
                     
-                    print(f"Message sent successfully. SID: {message.sid}")
+                    if success:
+                        print(f"Message sent successfully. Result: {result}")
+                    else:
+                        print(f"Failed to send message: {result}")
                     
                 except Exception as e:
                     print(f"Error sending nudge to user {user_record.phone}: {str(e)}")
