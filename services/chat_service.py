@@ -15,25 +15,54 @@ class ChatService:
     
     def process_user_message(self, user_msg, phone):
         """Process user message and return AI response"""
-        # Parse day command if present
-        day_number = self.llm_service.parse_day_command(user_msg)
+        # Check if this is a new user
+        is_new_user = self.user_repository.is_new_user(phone)
         
-        if day_number:
-            # User wants to start a specific day
+        # Parse day command if present
+        day_command = self.llm_service.parse_day_command(user_msg)
+        
+        # Flag to track if user is returning (sending a greeting to continue)
+        is_returning_user = False
+        
+        if day_command:
+            # User explicitly wants to switch to a specific day
+            day_number = day_command
             self.user_repository.set_last_day_number(phone, day_number)
-            prompt = self.llm_service.build_prompt(day_number)
+            prompt = self.llm_service.build_prompt(day_number, is_new_user=is_new_user)
         else:
-            # Regular message, use as is
-            prompt = user_msg
+            if is_new_user:
+                # New user - start with day 1
+                day_number = 1
+                self.user_repository.set_last_day_number(phone, day_number)
+                prompt = self.llm_service.build_prompt(day_number, is_new_user=True)
+            else:
+                # Existing user - check if this is a regular message or if we should continue from last day
+                last_day = self.user_repository.get_last_day_number(phone)
+                
+                # If it's a regular conversation, use the message as is
+                # If it looks like a restart or new session, remind them of their current day
+                if user_msg.lower() in ["hi", "hello", "start", "restart", "continue"]:
+                    # User wants to continue their learning journey
+                    is_returning_user = True
+                    prompt = self.llm_service.build_prompt(last_day, is_returning_user=True)
+                else:
+                    # Regular conversation within the current day
+                    prompt = user_msg
         
         # Get chat history
         chat_history = self.chat_repository.get_chat_history(phone)
         
         # Process with LLM
-        response = self.llm_service.process_message(prompt, chat_history)
+        response = self.llm_service.process_message(prompt, chat_history,
+                                                   is_new_user=is_new_user,
+                                                   is_returning_user=is_returning_user)
+        
+        # If this was a new user, mark them as existing now
+        if is_new_user:
+            self.user_repository.mark_user_as_existing(phone)
         
         # Save messages to database
-        self.chat_repository.add_chat_message(phone, 'user', prompt)
+        self.chat_repository.add_chat_message(phone, 'user', user_msg)
         self.chat_repository.add_chat_message(phone, 'model', response)
         
         return response
@@ -62,7 +91,7 @@ class ChatService:
                     original_phone = user_record.original_phone
                     
                     # Generate the first prompt for this day
-                    prompt = self.llm_service.build_prompt(day_number)
+                    prompt = self.llm_service.build_prompt(day_number, is_returning_user=True)
                     if not prompt:
                         print(f"Invalid day number {day_number} for user {user_record.phone}")
                         continue
