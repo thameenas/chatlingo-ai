@@ -5,7 +5,7 @@ from utils.utils import hash_phone
 class ChatRepository:
     def __init__(self):
         self.session_factory = get_session
-    
+
     def get_chat_history(self, phone: str) -> list:
         """Get chat history for a user"""
         db = self.session_factory()
@@ -26,6 +26,8 @@ class ChatRepository:
         try:
             phone_hash = hash_phone(phone)
             
+            # TODO: Query for the user's chat history and add to the last message instead of creating a new one each time
+            # Use JSONB to store the conversation parts
             chat = ChatHistory(phone=phone_hash, role=role, message=message)
             db.add(chat)
             db.commit()

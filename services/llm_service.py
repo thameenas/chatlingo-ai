@@ -31,14 +31,7 @@ class LLMService:
             
             # For new users, add welcome message to the system prompt
             if is_new_user:
-                welcome_prefix = """
-Before starting the lesson, warmly welcome the user to their 30-day Kannada learning journey.
-Explain that each day focuses on a real-life scenario in Karnataka and that you'll teach them
-practical phrases they can use right away. Encourage them to reply naturally and assure them
-that you'll guide them step by step.
-
-"""
-                return welcome_prefix + base_prompt
+                return base_prompt
             
             # For returning users who are continuing, add a reminder
             elif is_returning_user:
@@ -47,7 +40,7 @@ Welcome the user back to their Kannada learning journey. Remind them that they'r
 Day {day_number}: {scenario_title}. Express enthusiasm about continuing their learning journey.
 
 """
-                return returning_prefix + base_prompt
+                return returning_prefix
             
             # Regular prompt for ongoing conversations
             else:
@@ -55,25 +48,7 @@ Day {day_number}: {scenario_title}. Express enthusiasm about continuing their le
         return None
     
     def process_message(self, user_msg, chat_history, is_new_user=False, is_returning_user=False):
-        """Process user message with LLM"""
-        # If this is a day prompt (not a regular message)
-        if "Day " in user_msg and "scenario" in user_msg:
-            # Extract day number from the prompt
-            day_match = re.search(r"Day (\d+)", user_msg)
-            if day_match:
-                day_number = int(day_match.group(1))
-                # Rebuild the prompt with appropriate welcome/returning message
-                user_msg = self.build_prompt(day_number, is_new_user, is_returning_user)
-        
         # Process with LLM
         chat_session = self.model.start_chat(history=chat_history)
         response = chat_session.send_message(user_msg)
         return response.text
-    
-    def parse_day_command(self, user_msg):
-        """Parse day command from user message"""
-        user_msg = user_msg.strip().lower()
-        if match := re.match(r"(?i)^day\s*(\d+)$", user_msg):
-            return int(match.group(1))
-        else:
-            return None

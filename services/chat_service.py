@@ -4,6 +4,7 @@ from services.llm_service import LLMService
 from services.whatsapp_service import WhatsAppService
 import os
 from datetime import datetime
+import re
 
 class ChatService:
     def __init__(self):
@@ -15,40 +16,33 @@ class ChatService:
     
     def process_user_message(self, user_msg, phone):
         """Process user message and return AI response"""
-        # Check if this is a new user
-        is_new_user = self.user_repository.is_new_user(phone)
-        
-        # Parse day command if present
-        day_command = self.llm_service.parse_day_command(user_msg)
+        # Check if this is a new user (user doesn't exist in database)
+        user = self.user_repository.get_user(phone)
+        is_new_user = user is None
         
         # Flag to track if user is returning (sending a greeting to continue)
         is_returning_user = False
         
-        if day_command:
-            # User explicitly wants to switch to a specific day
-            day_number = day_command
-            self.user_repository.set_last_day_number(phone, day_number)
-            prompt = self.llm_service.build_prompt(day_number, is_new_user=is_new_user)
+        if is_new_user:
+            # New user - start with day 1
+            day_number = 1
+            self.user_repository.create_user(phone, day_number)
+            prompt = self.llm_service.build_prompt(day_number, is_new_user=True)
         else:
-            if is_new_user:
-                # New user - start with day 1
-                day_number = 1
-                self.user_repository.set_last_day_number(phone, day_number)
-                prompt = self.llm_service.build_prompt(day_number, is_new_user=True)
-            else:
-                # Existing user - check if this is a regular message or if we should continue from last day
-                last_day = self.user_repository.get_last_day_number(phone)
+            # Existing user
+            # check if this is a regular message or if we should continue from last day
+            last_day = user.day_number
                 
-                # If it's a regular conversation, use the message as is
-                # If it looks like a restart or new session, remind them of their current day
-                if user_msg.lower() in ["hi", "hello", "start", "restart", "continue"]:
-                    # User wants to continue their learning journey
-                    is_returning_user = True
-                    prompt = self.llm_service.build_prompt(last_day, is_returning_user=True)
-                else:
-                    # Regular conversation within the current day
-                    prompt = user_msg
-        
+            # If it's a regular conversation, use the message as is
+            # If it looks like a restart or new session, remind them of their current day
+            if user_msg.lower() in ["hi", "hello", "start", "restart", "continue"]:
+                # User wants to continue their learning journey
+                prompt = self.llm_service.build_prompt(last_day+1, is_returning_user=True)
+                self.user_repository.set_last_day_number(phone, last_day+1)
+            else:
+                # Regular conversation within the current day
+                prompt = user_msg
+                
         # Get chat history
         chat_history = self.chat_repository.get_chat_history(phone)
         
@@ -56,10 +50,6 @@ class ChatService:
         response = self.llm_service.process_message(prompt, chat_history,
                                                    is_new_user=is_new_user,
                                                    is_returning_user=is_returning_user)
-        
-        # If this was a new user, mark them as existing now
-        if is_new_user:
-            self.user_repository.mark_user_as_existing(phone)
         
         # Save messages to database
         self.chat_repository.add_chat_message(phone, 'user', user_msg)
@@ -112,3 +102,15 @@ class ChatService:
             
         except Exception as e:
             print(f"Error in daily nudge job: {str(e)}") 
+    
+    def parse_day_command(self, user_msg):
+        """Parse day command from user message"""
+        user_msg = user_msg.strip().lower()
+        if match := re.match(r"(?i)^day\s*(\d+)$", user_msg):
+            day_number = int(match.group(1))
+            if 1 <= day_number <= 30:
+                return day_number
+            else:
+                return None
+        else:
+            return None

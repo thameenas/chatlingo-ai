@@ -1,4 +1,4 @@
-from .user import LastDayNumber
+from .user import User
 from .chat import ChatHistory
 
-__all__ = ['LastDayNumber', 'ChatHistory'] 
+__all__ = ['User', 'ChatHistory'] 

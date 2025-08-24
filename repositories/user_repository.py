@@ -12,24 +12,7 @@ class UserRepository:
         db = self.session_factory()
         try:
             phone_hash = hash_phone(phone)
-            return db.query(User).filter(User.phone == phone_hash).first()
-        finally:
-            db.close()
-    
-    def is_new_user(self, phone: str) -> bool:
-        """Check if user is new"""
-        user = self.get_user(phone)
-        return user.is_new_user if user else True
-    
-    def mark_user_as_existing(self, phone: str):
-        """Mark user as no longer new"""
-        db = self.session_factory()
-        try:
-            phone_hash = hash_phone(phone)
-            user = db.query(User).filter(User.phone == phone_hash).first()
-            if user:
-                user.is_new_user = False
-                db.commit()
+            return db.query(User).filter(User.hashed_phone == phone_hash).first()
         finally:
             db.close()
     
@@ -43,21 +26,34 @@ class UserRepository:
         db = self.session_factory()
         try:
             phone_hash = hash_phone(phone)
-            user = db.query(User).filter(User.phone == phone_hash).first()
+            user = db.query(User).filter(User.hashed_phone == phone_hash).first()
             if user:
                 user.day_number = day_number
-                user.is_new_user = False  # Mark as existing user when day is set
                 db.commit()
             else:
                 # Create new user record
                 record = User(
                     phone=phone_hash,
                     original_phone=phone,
-                    day_number=day_number,
-                    is_new_user=False  # New user becomes existing after first interaction
+                    day_number=day_number
                 )
                 db.add(record)
                 db.commit()
+        finally:
+            db.close()
+
+    def create_user(self, phone: str, day_number: int):
+        """Set the last day number for a user"""
+        db = self.session_factory()
+        try:
+            phone_hash = hash_phone(phone)
+            record = User(
+                    hashed_phone=phone_hash,
+                    original_phone=phone,
+                    day_number=day_number
+                )
+            db.add(record)
+            db.commit()
         finally:
             db.close()
     
