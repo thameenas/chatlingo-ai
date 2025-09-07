@@ -16,15 +16,6 @@ init_db()
 # Initialize controllers
 chat_controller = ChatController()
 
-# Initialize nudge scheduler
-nudge_scheduler = None
-
-def initialize_scheduler():
-    """Initialize and start the nudge scheduler"""
-    global nudge_scheduler
-    nudge_scheduler = NudgeScheduler()
-    nudge_scheduler.start_scheduler()
-
 # Routes
 @app.route("/whatsapp-webhook", methods=["GET"])
 def verify_webhook():
@@ -36,19 +27,6 @@ def whatsapp_webhook():
     """WhatsApp webhook endpoint"""
     return chat_controller.handle_whatsapp_webhook()
 
-@app.route("/api/nudges/send", methods=["POST"])
-def manual_send_nudges():
-    """Manual nudge trigger endpoint"""
-    return chat_controller.handle_manual_nudge()
-
-@app.route("/")
-def index():
-    """Serve web interface"""
-    return app.send_static_file('index.html')
-
 if __name__ == "__main__":
-    # Initialize the scheduler when the app starts
-    initialize_scheduler()
-    
     port = int(os.environ.get("PORT", 8000))
     app.run(host="0.0.0.0", port=port)

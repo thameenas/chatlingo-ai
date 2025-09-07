@@ -22,33 +22,3 @@ class LLMService:
         with open("prompt_template.txt", "r", encoding="utf-8") as f:
             self.prompt_template = f.read()
             print(f"Prompt message: {self.prompt_template}")
-    
-    def build_prompt(self, day_number, is_new_user=False, is_returning_user=False):
-        """Build prompt for a specific day with optional welcome message"""
-        if 1 <= day_number <= 30:
-            scenario_title = self.scenarios[day_number - 1]
-            base_prompt = self.prompt_template.format(day_number=day_number, scenario_title=scenario_title)
-            
-            # For new users, add welcome message to the system prompt
-            if is_new_user:
-                return base_prompt
-            
-            # For returning users who are continuing, add a reminder
-            elif is_returning_user:
-                returning_prefix = f"""
-Welcome the user back to their Kannada learning journey. Remind them that they're currently on
-Day {day_number}: {scenario_title}. Express enthusiasm about continuing their learning journey.
-
-"""
-                return returning_prefix
-            
-            # Regular prompt for ongoing conversations
-            else:
-                return base_prompt
-        return None
-    
-    def process_message(self, user_msg, chat_history, is_new_user=False, is_returning_user=False):
-        # Process with LLM
-        chat_session = self.model.start_chat(history=chat_history)
-        response = chat_session.send_message(user_msg)
-        return response.text
