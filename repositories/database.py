@@ -1,8 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import os
-from models.user import Base as UserBase
-from models.chat import Base as ChatBase
+from models.base import Base
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -25,6 +24,7 @@ def get_session():
 
 def init_db():
     """Initialize database tables"""
-    # Create all tables from both models
-    UserBase.metadata.create_all(bind=engine)
-    ChatBase.metadata.create_all(bind=engine) 
+    # Create all tables from all models at once
+    # Since we're using a single Base, SQLAlchemy will handle the correct order
+    # based on foreign key dependencies
+    Base.metadata.create_all(bind=engine)

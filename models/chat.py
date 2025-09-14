@@ -1,8 +1,6 @@
 from sqlalchemy import Column, String, ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
+from models.base import Base
 
 class ChatHistory(Base):
     __tablename__ = 'chat_history'
