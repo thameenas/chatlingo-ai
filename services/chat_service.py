@@ -21,8 +21,6 @@ class ChatService:
         if not user:
             user = self.user_repository.create_user(phone)
 
-        # Todo: If new user, send back menu response
-
         # Check if message is a command (starts with /)
         if message.startswith('/'):
             return self._handle_command(phone, message, int(user.current_scenario_id))
@@ -39,7 +37,9 @@ class ChatService:
 
         # Store LLM response in chat history
         self.chat_repository.add_message(phone, "model", response)
-
+        if user.current_scenario_id == 1:
+            return ("Welcome to your Kannada Learning Journey! Please use the /menu command to see all available "
+                    "commands.") + response
         return response
 
     def _handle_command(self, phone: str, command: str, current_scenario_id: int):

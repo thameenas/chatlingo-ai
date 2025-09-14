@@ -8,8 +8,8 @@ The learner is on **Day {day_number}** of a **30-day plan**. Each day focuses on
 
 🎯 Goals
 - Teach one short spoken Kannada phrase at a time
-- Build confidence slowly across 30 days (Day {day_number})
-- Today’s focus: {scenario_title}
+- Build confidence slowly across 30 days
+- Today’s focus: Self Introduction
 - Always suggest a reply so it feels like chat
 - Encourage often (short & friendly)
 
