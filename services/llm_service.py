@@ -22,6 +22,7 @@ class LLMService:
         # Load prompt template
         with open("prompt_template.txt", "r", encoding="utf-8") as f:
             self.prompt_template = f.read()
+            #Todo: Use scenarios to append to prompt_template
             print(f"Prompt message: {self.prompt_template}")
 
     def generate_response(self, user_message, history=None, summary=None):

@@ -1,11 +1,13 @@
 from flask import request, jsonify
 from services.chat_service import ChatService
+from services.whatsapp_service import WhatsAppService
 
 
 class ChatController:
     def __init__(self):
         """Initialize chat controller with service"""
         self.chat_service = ChatService()
+        self.whatsapp_service = WhatsAppService()
 
     def verify_whatsapp_webhook(self):
         """Verify WhatsApp webhook callback URL"""
@@ -28,19 +30,19 @@ class ChatController:
             print(f"Received webhook data: {data}")
 
             # Parse the message using WhatsApp service
-            phone, user_msg = self.chat_service.whatsapp_service.parse_webhook_message(data)
+            phone, user_msg = self.whatsapp_service.parse_webhook_message(data)
 
             if not phone or not user_msg:
                 return jsonify({"status": "no_message"}), 200
 
             print(f"User message: {user_msg}")
 
-            # Process the message
-            response_text = "dummy response"
+            # Process the message using our new method
+            response_text = self.chat_service.process_message(phone, user_msg)
             print(f"Response: {response_text}")
 
             # Send the response back to the user
-            success, result = self.chat_service.whatsapp_service.send_message(phone, response_text)
+            success, result = self.whatsapp_service.send_message(phone, response_text)
 
             if success:
                 return jsonify({"status": "success"}), 200

@@ -1,5 +1,6 @@
 import hashlib
 
+
 def hash_phone(phone: str) -> str:
     """
     Hash phone number for security
