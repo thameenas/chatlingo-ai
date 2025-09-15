@@ -27,10 +27,10 @@ class ChatService:
 
         # If not a command, process as normal message
         # Store user message in chat history
-        chat_history = self.chat_repository.add_message(phone, "user", message)
+        chat_history_messages = self.chat_repository.add_message(phone, "user", message)
 
         # Get formatted chat history
-        history_messages = self._get_formatted_chat_history(chat_history)
+        history_messages = self._get_formatted_chat_history(chat_history_messages)
 
         # Generate response from LLM
         response = self.llm_service.generate_response(message, history=history_messages)
@@ -111,12 +111,12 @@ class ChatService:
             response = "Unknown command. Use /menu to see available commands."
             return response
 
-    def _get_formatted_chat_history(self, chat_history, limit: int = 10):
+    def _get_formatted_chat_history(self, chat_history_messages, limit: int = 10):
         history_messages = []
 
-        if chat_history and chat_history.messages:
+        if chat_history_messages:
             # Convert chat history to format expected by LLM service
-            for msg in chat_history.messages[-limit:]:
+            for msg in chat_history_messages[-limit:]:
                 history_messages.append({
                     "role": msg["role"],
                     "parts": [msg["content"]]

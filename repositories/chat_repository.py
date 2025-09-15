@@ -27,7 +27,7 @@ class ChatRepository:
             )
             session.add(chat_history)
             session.commit()
-            return chat_history
+            return chat_history.messages.copy()
         finally:
             session.close()
             
@@ -58,6 +58,6 @@ class ChatRepository:
             chat_history.messages = messages
             
             session.commit()
-            return chat_history
+            return chat_history.messages.copy()
         finally:
             session.close()

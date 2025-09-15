@@ -1,3 +1,4 @@
+from models.dto import UserDTO
 from models.user import User
 from .database import get_session
 from utils.utils import hash_phone
@@ -12,7 +13,7 @@ class UserRepository:
         session = self.session_factory()
         try:
             user = session.query(User).filter(User.phone_hash == phone_hash).first()
-            return user
+            return UserDTO.from_model(user)
         finally:
             session.close()
             
@@ -27,7 +28,7 @@ class UserRepository:
             )
             session.add(user)
             session.commit()
-            return user
+            return UserDTO.from_model(user)
         finally:
             session.close()
             
@@ -40,6 +41,6 @@ class UserRepository:
                 user.current_scenario_id = str(scenario_id)
                 user.last_active_at = datetime.utcnow()
                 session.commit()
-            return user
+            return UserDTO.from_model(user)
         finally:
             session.close()

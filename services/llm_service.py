@@ -70,12 +70,12 @@ class LLMService:
             ]
 
             # Initialize content with system prompt
-            content = [{"role": "system", "parts": [self.prompt_template]}]
+            content = [{"role": "user", "parts": [self.prompt_template]}]
 
             # Add summary as a system message if provided
             if summary and isinstance(summary, str):
                 content.append({
-                    "role": "system",
+                    "role": "user",
                     "parts": [f"Summary of previous interactions: {summary}"]
                 })
 
