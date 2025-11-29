@@ -12,9 +12,9 @@ from datetime import datetime
 class UserSchema(BaseModel):
     """User model - represents a WhatsApp user"""
     phone_number: str
-    name: Optional[str] = None
     current_mode: str = Field(default='menu')
     current_scenario_id: Optional[int] = None
+    joined_at: Optional[datetime] = None
 
 
 class ScenarioSchema(BaseModel):
@@ -35,6 +35,7 @@ class ChatMessageSchema(BaseModel):
 
 class UserProgressSchema(BaseModel):
     """User progress tracking for scenarios"""
+    phone_number: str
     scenario_id: int
     status: str  # e.g., 'in_progress', 'completed'
-    completed_at: datetime
+    completed_at: Optional[datetime] = None
