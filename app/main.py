@@ -7,6 +7,7 @@ Entry point for the WhatsApp chatbot backend.
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from app.config import settings
+from app.routers import webhook
 import logging
 
 # Configure logging
@@ -24,6 +25,9 @@ app = FastAPI(
     version="0.1.0",
     debug=settings.debug
 )
+
+# Include routers
+app.include_router(webhook.router)
 
 @app.get("/health")
 async def health_check():
