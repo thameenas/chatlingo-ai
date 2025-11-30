@@ -187,7 +187,7 @@ class MessageProcessor:
             return
 
         # Get history
-        history_objs = db_service.get_recent_messages(phone, limit=10)
+        history_objs = db_service.get_recent_messages(phone, limit=50)
         history = [{"role": msg.role, "content": msg.content} for msg in history_objs]
         
         # Generate response
@@ -202,7 +202,7 @@ class MessageProcessor:
         phone = user.phone_number
         
         # Get history
-        history_objs = db_service.get_recent_messages(phone, limit=10)
+        history_objs = db_service.get_recent_messages(phone, limit=50)
         history = [{"role": msg.role, "content": msg.content} for msg in history_objs]
         
         # Generate response

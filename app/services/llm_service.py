@@ -126,7 +126,7 @@ class OpenRouterService(BaseLLMService):
                 situation_seed=scenario.get('situation_seed', 'Casual conversation')
             )
             
-            messages = [{"role": "system", "content": system_prompt}]
+            messages = [{"role": "assistant", "content": system_prompt}]
             messages.extend(history)
             
             response = await self.client.chat.completions.create(
