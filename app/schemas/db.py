@@ -14,6 +14,7 @@ class UserSchema(BaseModel):
     phone_number: str
     current_mode: str = Field(default='menu')
     current_scenario_id: Optional[int] = None
+    current_session_id: Optional[str] = None
     joined_at: Optional[datetime] = None
 
 
@@ -31,7 +32,8 @@ class ChatMessageSchema(BaseModel):
     phone_number: str
     role: str  # 'user' or 'bot'
     mode: str   # e.g., 'menu', 'roleplay'
-    scenario_id: Optional[int] = None 
+    scenario_id: Optional[int] = None
+    session_id: Optional[str] = None
     content: str
     created_at: datetime
 

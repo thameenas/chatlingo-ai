@@ -4,6 +4,7 @@ CREATE TABLE users (
     name TEXT,
     current_mode TEXT DEFAULT 'menu',
     current_scenario_id INT,
+    current_session_id UUID,
     joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -23,6 +24,7 @@ CREATE TABLE chat_history (
     role TEXT NOT NULL,
     mode TEXT,
     scenario_id INT REFERENCES scenarios(id),
+    session_id UUID,
     content TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

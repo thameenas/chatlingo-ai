@@ -50,24 +50,28 @@ def get_or_create_user(phone: str) -> UserSchema:
     return UserSchema(**response.data[0])
 
 
-def update_user_mode(phone: str, mode: str, scenario_id: Optional[int] = None) -> None:
+def update_user_mode(phone: str, mode: str, scenario_id: Optional[int] = None, session_id: Optional[str] = None) -> None:
     """
-    Update user's current mode and optionally scenario_id.
+    Update user's current mode and optionally scenario_id and session_id.
     
     Args:
         phone: User's phone number
         mode: New mode ('menu', 'chat', 'roleplay', 'translate')
         scenario_id: Optional scenario ID for roleplay mode
+        session_id: Optional session UUID for tracking conversation context
     """
     update_data = {
         'current_mode': mode,
         'current_scenario_id': scenario_id
     }
     
+    if session_id:
+        update_data['current_session_id'] = session_id
+        
     supabase.table('users').update(update_data).eq('phone_number', phone).execute()
 
 
-def add_message(phone: str, role: str, content: str, mode: str = "menu") -> None:
+def add_message(phone: str, role: str, content: str, mode: str = "menu", session_id: Optional[str] = None, scenario_id: Optional[int] = None) -> None:
     """
     Add a message to chat history.
     
@@ -76,34 +80,45 @@ def add_message(phone: str, role: str, content: str, mode: str = "menu") -> None
         role: Message role ('user' or 'bot')
         content: Message content
         mode: Current mode of the user
+        session_id: Optional session UUID
+        scenario_id: Optional scenario ID
     """
     message_data = {
         'phone_number': phone,
         'role': role,
         'content': content,
         'mode': mode,
+        'session_id': session_id,
+        'scenario_id': scenario_id,
         'created_at': datetime.utcnow().isoformat()
     }
     
     supabase.table('chat_history').insert(message_data).execute()
 
 
-def get_recent_messages(phone: str, limit: int = 10) -> List[ChatMessageSchema]:
+def get_recent_messages(phone: str, limit: int = 10, session_id: Optional[str] = None) -> List[ChatMessageSchema]:
     """
     Get recent messages for a user in chronological order (oldest to newest).
     
     Args:
         phone: User's phone number
         limit: Maximum number of messages to retrieve (default: 10)
+        session_id: Optional session UUID to filter messages
         
     Returns:
         List of ChatMessageSchema in chronological order (oldest first)
     """
-    # Fetch messages ordered by created_at DESC (newest first)
-    response = supabase.table('chat_history')\
+    # Build query
+    query = supabase.table('chat_history')\
         .select('phone_number, role, mode, scenario_id, content, created_at')\
-        .eq('phone_number', phone)\
-        .order('created_at', desc=True)\
+        .eq('phone_number', phone)
+        
+    # Filter by session_id if provided
+    if session_id:
+        query = query.eq('session_id', session_id)
+        
+    # Execute query
+    response = query.order('created_at', desc=True)\
         .limit(limit)\
         .execute()
     
