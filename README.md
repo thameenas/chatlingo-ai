@@ -1,6 +1,6 @@
 # Chatlingo AI - WhatsApp Kannada Learning Bot
 
-A WhatsApp chatbot that teaches spoken Bangalore Kannada(Kannada written in English alphabets).
+A WhatsApp chatbot that teaches spoken Kannada written in English.
 
 ## Tech Stack
 
