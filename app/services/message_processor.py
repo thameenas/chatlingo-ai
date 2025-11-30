@@ -10,7 +10,7 @@ from typing import Optional, Dict, Any
 from app.schemas.whatsapp import WhatsAppWebhook, WhatsAppMessage
 from app.services.whatsapp_service import whatsapp_service
 from app.services.llm_service import llm_service
-from app.services import db_service
+from app.services import supabase_service
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ class MessageProcessor:
             await whatsapp_service.mark_message_as_read(message.id)
             
             # 2. Get or create user in DB
-            user = db_service.get_or_create_user(phone_number)
+            user = supabase_service.get_or_create_user(phone_number)
             
             # 3. Handle different message types
             if message.type == "text":
@@ -68,7 +68,7 @@ class MessageProcessor:
         # Actually, user object is fetched fresh at start of process_webhook.
         session_id = getattr(user, 'current_session_id', None)
         scenario_id = getattr(user, 'current_scenario_id', None)
-        db_service.add_message(phone, "user", text, mode=mode, session_id=session_id, scenario_id=scenario_id)
+        supabase_service.add_message(phone, "user", text, mode=mode, session_id=session_id, scenario_id=scenario_id)
         
         # Global commands
         if text.lower() in ["menu", "hi", "hello", "start", "restart"]:
@@ -99,7 +99,7 @@ class MessageProcessor:
             
             if button_id == "practice_scenario_start":
                 # Fetch all scenarios
-                scenarios = db_service.get_all_scenarios()
+                scenarios = supabase_service.get_all_scenarios()
                 
                 if not scenarios:
                     await whatsapp_service.send_text_message(phone, "No scenarios found. Please contact admin.")
@@ -146,21 +146,21 @@ class MessageProcessor:
 
     async def _handle_random_chat_start(self, phone: str):
         """Start random chat mode"""
-        db_service.update_user_mode(phone, "random_chat")
+        supabase_service.update_user_mode(phone, "random_chat")
         await whatsapp_service.send_text_message(phone, "Banni! Let's have a cup of coffee and chat. What's on your mind?")
 
     async def _start_scenario(self, phone: str, scenario_id: int):
         """Start a specific practice scenario"""
-        scenario = db_service.get_scenario_by_id(scenario_id)
+        scenario = supabase_service.get_scenario_by_id(scenario_id)
         if scenario:
             # Generate new session ID
             session_id = str(uuid.uuid4())
             
-            db_service.update_user_mode(phone, "practice_scenario", scenario_id=scenario_id, session_id=session_id)
+            supabase_service.update_user_mode(phone, "practice_scenario", scenario_id=scenario_id, session_id=session_id)
             
             # Send opening line
             await whatsapp_service.send_text_message(phone, f"*{scenario.title}*\n\n{scenario.opening_line}")
-            db_service.add_message(phone, "assistant", scenario.opening_line, mode="practice_scenario", session_id=session_id, scenario_id=scenario_id)
+            supabase_service.add_message(phone, "assistant", scenario.opening_line, mode="practice_scenario", session_id=session_id, scenario_id=scenario_id)
         else:
             await whatsapp_service.send_text_message(phone, "Scenario not found.")
             await self._send_main_menu(phone)
@@ -169,7 +169,7 @@ class MessageProcessor:
         """Send the main menu with buttons"""
         # Reset mode to menu
         # Todo: Consider if we want this user state change
-        db_service.update_user_mode(phone, "menu")
+        supabase_service.update_user_mode(phone, "menu")
         
         await whatsapp_service.send_interactive_buttons(
             phone,
@@ -189,14 +189,14 @@ class MessageProcessor:
 
         scenario_id = user.current_scenario_id
         
-        scenario = db_service.get_scenario_by_id(scenario_id)
+        scenario = supabase_service.get_scenario_by_id(scenario_id)
         if not scenario:
             await self._send_main_menu(phone)
             return
 
         # Get history filtered by current session
         session_id = getattr(user, 'current_session_id', None)
-        history_objs = db_service.get_recent_messages(phone, limit=50, session_id=session_id)
+        history_objs = supabase_service.get_recent_messages(phone, limit=50, session_id=session_id)
         history = [{"role": msg.role, "content": msg.content} for msg in history_objs]
         
         # Generate response
@@ -204,14 +204,14 @@ class MessageProcessor:
         
         # Send and save
         await whatsapp_service.send_text_message(phone, response_text)
-        db_service.add_message(phone, "assistant", response_text, mode="practice_scenario", session_id=session_id, scenario_id=scenario_id)
+        supabase_service.add_message(phone, "assistant", response_text, mode="practice_scenario", session_id=session_id, scenario_id=scenario_id)
 
     async def _handle_chat_flow(self, user: Any, text: str):
         """Handle conversation in random chat mode"""
         phone = user.phone_number
         
         # Get history
-        history_objs = db_service.get_recent_messages(phone, limit=50)
+        history_objs = supabase_service.get_recent_messages(phone, limit=50)
         history = [{"role": msg.role, "content": msg.content} for msg in history_objs]
         
         # Generate response
@@ -219,7 +219,7 @@ class MessageProcessor:
         
         # Send and save
         await whatsapp_service.send_text_message(phone, response_text)
-        db_service.add_message(phone, "assistant", response_text, mode="random_chat")
+        supabase_service.add_message(phone, "assistant", response_text, mode="random_chat")
 
 # Global instance
 message_processor = MessageProcessor()
