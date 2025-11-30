@@ -26,10 +26,6 @@ def load_prompt(filename: str) -> str:
         logger.error(f"Failed to load prompt {filename}: {str(e)}")
         return ""
 
-# Load prompts at module level
-BASE_SYSTEM_PROMPT = load_prompt("base_system.txt")
-PRACTICE_SCENARIO_SYSTEM_PROMPT = load_prompt("practice_scenarios_system.txt")
-
 class BaseLLMService(ABC):
     """Abstract base class for LLM services"""
     
@@ -50,7 +46,8 @@ class OpenAIService(BaseLLMService):
 
     async def get_chat_response(self, history: List[Dict[str, str]]) -> str:
         try:
-            messages = [{"role": "system", "content": BASE_SYSTEM_PROMPT}]
+            base_system_prompt = load_prompt("base_system.txt")
+            messages = [{"role": "system", "content": base_system_prompt}]
             messages.extend(history)
             
             response = await self.client.chat.completions.create(
@@ -68,7 +65,8 @@ class OpenAIService(BaseLLMService):
 
     async def get_practice_scenario_response(self, history: List[Dict[str, str]], scenario: Dict[str, Any]) -> str:
         try:
-            system_prompt = PRACTICE_SCENARIO_SYSTEM_PROMPT.format(
+            practice_scenario_prompt = load_prompt("practice_scenarios_system.txt")
+            system_prompt = practice_scenario_prompt.format(
                 scenario_title=scenario.get('title', 'General Chat'),
                 bot_persona=scenario.get('bot_persona', 'Local Bangalorean'),
                 situation_seed=scenario.get('situation_seed', 'Casual conversation')
@@ -102,7 +100,8 @@ class OpenRouterService(BaseLLMService):
 
     async def get_chat_response(self, history: List[Dict[str, str]]) -> str:
         try:
-            messages = [{"role": "system", "content": BASE_SYSTEM_PROMPT}]
+            base_system_prompt = load_prompt("base_system.txt")
+            messages = [{"role": "system", "content": base_system_prompt}]
             messages.extend(history)
             
             response = await self.client.chat.completions.create(
@@ -120,13 +119,14 @@ class OpenRouterService(BaseLLMService):
 
     async def get_practice_scenario_response(self, history: List[Dict[str, str]], scenario: Dict[str, Any]) -> str:
         try:
-            system_prompt = PRACTICE_SCENARIO_SYSTEM_PROMPT.format(
+            practice_scenario_prompt = load_prompt("practice_scenarios_system.txt")
+            system_prompt = practice_scenario_prompt.format(
                 scenario_title=scenario.get('title', 'General Chat'),
                 bot_persona=scenario.get('bot_persona', 'Local Bangalorean'),
                 situation_seed=scenario.get('situation_seed', 'Casual conversation')
             )
             
-            messages = [{"role": "assistant", "content": system_prompt}]
+            messages = [{"role": "system", "content": system_prompt}]
             messages.extend(history)
             
             response = await self.client.chat.completions.create(

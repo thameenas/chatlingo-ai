@@ -147,7 +147,13 @@ class MessageProcessor:
     async def _handle_random_chat_start(self, phone: str):
         """Start random chat mode"""
         supabase_service.update_user_mode(phone, "random_chat")
-        await whatsapp_service.send_text_message(phone, "Banni! Let's have a cup of coffee and chat. What's on your mind?")
+        
+        # Generate dynamic opening using LLM instead of static text
+        history = [] # Empty history for start
+        response_text = await llm_service.get_chat_response(history)
+        
+        await whatsapp_service.send_text_message(phone, response_text)
+        supabase_service.add_message(phone, "assistant", response_text, mode="random_chat")
 
     async def _start_scenario(self, phone: str, scenario_id: int):
         """Start a specific practice scenario"""
@@ -158,9 +164,15 @@ class MessageProcessor:
             
             supabase_service.update_user_mode(phone, "practice_scenario", scenario_id=scenario_id, session_id=session_id)
             
+            # Use LLM to generate the opening line dynamically based on the scenario
+            # This ensures it follows the system prompt rules (Kanglish + Options)
+            # We pass an empty history, but the system prompt has the scenario details
+            history = [] 
+            response_text = await llm_service.get_practice_scenario_response(history, scenario.model_dump())
+            
             # Send opening line
-            await whatsapp_service.send_text_message(phone, f"*{scenario.title}*\n\n{scenario.opening_line}")
-            supabase_service.add_message(phone, "assistant", scenario.opening_line, mode="practice_scenario", session_id=session_id, scenario_id=scenario_id)
+            await whatsapp_service.send_text_message(phone, f"*{scenario.title}*\n\n{response_text}")
+            supabase_service.add_message(phone, "assistant", response_text, mode="practice_scenario", session_id=session_id, scenario_id=scenario_id)
         else:
             await whatsapp_service.send_text_message(phone, "Scenario not found.")
             await self._send_main_menu(phone)
