@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 # Menu Buttons
 MENU_BUTTONS = [
-    {"id": "roleplay_start", "title": "🎭 Roleplay"},
+    {"id": "practice_scenario_start", "title": "🎭 Practice Scenarios"},
     {"id": "sos_helper", "title": "🚑 SOS Helper"},
     {"id": "random_chat", "title": "☕ Random Chat"}
 ]
@@ -79,8 +79,8 @@ class MessageProcessor:
         if mode == "menu":
             await self._send_main_menu(phone)
             
-        elif mode == "roleplay":
-            await self._handle_roleplay_flow(user, text)
+        elif mode == "practice_scenario":
+            await self._handle_practice_scenario_flow(user, text)
             
         elif mode == "random_chat":
             await self._handle_chat_flow(user, text)
@@ -97,7 +97,7 @@ class MessageProcessor:
         if interactive.type == "button_reply":
             button_id = interactive.button_reply.id
             
-            if button_id == "roleplay_start":
+            if button_id == "practice_scenario_start":
                 # Fetch all scenarios
                 scenarios = db_service.get_all_scenarios()
                 
@@ -150,17 +150,17 @@ class MessageProcessor:
         await whatsapp_service.send_text_message(phone, "Banni! Let's have a cup of coffee and chat. What's on your mind?")
 
     async def _start_scenario(self, phone: str, scenario_id: int):
-        """Start a specific roleplay scenario"""
+        """Start a specific practice scenario"""
         scenario = db_service.get_scenario_by_id(scenario_id)
         if scenario:
             # Generate new session ID
             session_id = str(uuid.uuid4())
             
-            db_service.update_user_mode(phone, "roleplay", scenario_id=scenario_id, session_id=session_id)
+            db_service.update_user_mode(phone, "practice_scenario", scenario_id=scenario_id, session_id=session_id)
             
             # Send opening line
             await whatsapp_service.send_text_message(phone, f"*{scenario.title}*\n\n{scenario.opening_line}")
-            db_service.add_message(phone, "assistant", scenario.opening_line, mode="roleplay", session_id=session_id, scenario_id=scenario_id)
+            db_service.add_message(phone, "assistant", scenario.opening_line, mode="practice_scenario", session_id=session_id, scenario_id=scenario_id)
         else:
             await whatsapp_service.send_text_message(phone, "Scenario not found.")
             await self._send_main_menu(phone)
@@ -177,13 +177,13 @@ class MessageProcessor:
             MENU_BUTTONS
         )
 
-    async def _handle_roleplay_flow(self, user: Any, text: str):
-        """Handle conversation in roleplay mode"""
+    async def _handle_practice_scenario_flow(self, user: Any, text: str):
+        """Handle conversation in practice scenario mode"""
         phone = user.phone_number
         
         # Check for exit commands
         if text.lower().strip() in ["exit", "quit", "stop", "menu", "end"]:
-            await whatsapp_service.send_text_message(phone, "Ending roleplay session. Great practice!")
+            await whatsapp_service.send_text_message(phone, "Ending practice session. Great job!")
             await self._send_main_menu(phone)
             return
 
@@ -200,11 +200,11 @@ class MessageProcessor:
         history = [{"role": msg.role, "content": msg.content} for msg in history_objs]
         
         # Generate response
-        response_text = await llm_service.get_roleplay_response(history, scenario.model_dump())
+        response_text = await llm_service.get_practice_scenario_response(history, scenario.model_dump())
         
         # Send and save
         await whatsapp_service.send_text_message(phone, response_text)
-        db_service.add_message(phone, "assistant", response_text, mode="roleplay", session_id=session_id, scenario_id=scenario_id)
+        db_service.add_message(phone, "assistant", response_text, mode="practice_scenario", session_id=session_id, scenario_id=scenario_id)
 
     async def _handle_chat_flow(self, user: Any, text: str):
         """Handle conversation in random chat mode"""

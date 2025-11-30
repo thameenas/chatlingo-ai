@@ -28,7 +28,7 @@ def load_prompt(filename: str) -> str:
 
 # Load prompts at module level
 BASE_SYSTEM_PROMPT = load_prompt("base_system.txt")
-ROLEPLAY_SYSTEM_PROMPT = load_prompt("roleplay_system.txt")
+PRACTICE_SCENARIO_SYSTEM_PROMPT = load_prompt("practice_scenarios_system.txt")
 
 class BaseLLMService(ABC):
     """Abstract base class for LLM services"""
@@ -38,7 +38,7 @@ class BaseLLMService(ABC):
         pass
 
     @abstractmethod
-    async def get_roleplay_response(self, history: List[Dict[str, str]], scenario: Dict[str, Any]) -> str:
+    async def get_practice_scenario_response(self, history: List[Dict[str, str]], scenario: Dict[str, Any]) -> str:
         pass
 
 class OpenAIService(BaseLLMService):
@@ -66,9 +66,9 @@ class OpenAIService(BaseLLMService):
             logger.error(f"OpenAI API Error: {str(e)}")
             return "Ayyo! Something went wrong with my brain. Please try again later, maadi."
 
-    async def get_roleplay_response(self, history: List[Dict[str, str]], scenario: Dict[str, Any]) -> str:
+    async def get_practice_scenario_response(self, history: List[Dict[str, str]], scenario: Dict[str, Any]) -> str:
         try:
-            system_prompt = ROLEPLAY_SYSTEM_PROMPT.format(
+            system_prompt = PRACTICE_SCENARIO_SYSTEM_PROMPT.format(
                 scenario_title=scenario.get('title', 'General Chat'),
                 bot_persona=scenario.get('bot_persona', 'Local Bangalorean'),
                 situation_seed=scenario.get('situation_seed', 'Casual conversation')
@@ -87,7 +87,7 @@ class OpenAIService(BaseLLMService):
             return response.choices[0].message.content
             
         except Exception as e:
-            logger.error(f"OpenAI Roleplay Error: {str(e)}")
+            logger.error(f"OpenAI Practice Scenario Error: {str(e)}")
             return "Swalpa technical issue ide. Let's continue in a bit!"
 
 class OpenRouterService(BaseLLMService):
@@ -118,9 +118,9 @@ class OpenRouterService(BaseLLMService):
             logger.error(f"OpenRouter API Error: {str(e)}")
             return "Ayyo! Something went wrong with my brain. Please try again later."
 
-    async def get_roleplay_response(self, history: List[Dict[str, str]], scenario: Dict[str, Any]) -> str:
+    async def get_practice_scenario_response(self, history: List[Dict[str, str]], scenario: Dict[str, Any]) -> str:
         try:
-            system_prompt = ROLEPLAY_SYSTEM_PROMPT.format(
+            system_prompt = PRACTICE_SCENARIO_SYSTEM_PROMPT.format(
                 scenario_title=scenario.get('title', 'General Chat'),
                 bot_persona=scenario.get('bot_persona', 'Local Bangalorean'),
                 situation_seed=scenario.get('situation_seed', 'Casual conversation')
@@ -161,8 +161,8 @@ class LLMService:
     async def get_chat_response(self, history: List[Dict[str, str]]) -> str:
         return await self.provider.get_chat_response(history)
 
-    async def get_roleplay_response(self, history: List[Dict[str, str]], scenario: Dict[str, Any]) -> str:
-        return await self.provider.get_roleplay_response(history, scenario)
+    async def get_practice_scenario_response(self, history: List[Dict[str, str]], scenario: Dict[str, Any]) -> str:
+        return await self.provider.get_practice_scenario_response(history, scenario)
 
 # Global instance
 llm_service = LLMService()
