@@ -15,7 +15,7 @@ class WhatsAppService:
     """Service for interacting with WhatsApp Cloud API"""
     
     def __init__(self):
-        self.base_url = f"https://graph.facebook.com/v17.0/{settings.whatsapp_phone_id}"
+        self.base_url = f"https://graph.facebook.com/v22.0/{settings.whatsapp_phone_id}"
         self.headers = {
             "Authorization": f"Bearer {settings.whatsapp_access_token}",
             "Content-Type": "application/json"

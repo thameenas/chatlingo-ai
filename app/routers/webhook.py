@@ -12,7 +12,7 @@ from app.services.message_processor import message_processor
 import logging
 
 router = APIRouter(
-    prefix="/webhook",
+    prefix="/whatsapp-webhook",
     tags=["webhook"]
 )
 
