@@ -12,7 +12,17 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables"""
     
     # OpenAI Configuration
-    openai_api_key: str
+    openai_api_key: str | None = None
+
+    # OpenRouter Configuration
+    openrouter_api_key: str | None = None
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    
+    # LLM Configuration
+    llm_provider: Literal["openai", "openrouter"] = "openai"
+    llm_model: str = "gpt-4o-mini"
+    
+    
     
     # WhatsApp Cloud API Configuration
     whatsapp_access_token: str

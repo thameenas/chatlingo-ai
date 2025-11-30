@@ -67,7 +67,7 @@ def update_user_mode(phone: str, mode: str, scenario_id: Optional[int] = None) -
     supabase.table('users').update(update_data).eq('phone_number', phone).execute()
 
 
-def add_message(phone: str, role: str, content: str) -> None:
+def add_message(phone: str, role: str, content: str, mode: str = "menu") -> None:
     """
     Add a message to chat history.
     
@@ -75,11 +75,13 @@ def add_message(phone: str, role: str, content: str) -> None:
         phone: User's phone number
         role: Message role ('user' or 'bot')
         content: Message content
+        mode: Current mode of the user
     """
     message_data = {
         'phone_number': phone,
         'role': role,
         'content': content,
+        'mode': mode,
         'created_at': datetime.utcnow().isoformat()
     }
     
@@ -99,7 +101,7 @@ def get_recent_messages(phone: str, limit: int = 10) -> List[ChatMessageSchema]:
     """
     # Fetch messages ordered by created_at DESC (newest first)
     response = supabase.table('chat_history')\
-        .select('role, content, created_at')\
+        .select('phone_number, role, mode, scenario_id, content, created_at')\
         .eq('phone_number', phone)\
         .order('created_at', desc=True)\
         .limit(limit)\

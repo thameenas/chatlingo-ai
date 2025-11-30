@@ -63,7 +63,7 @@ class MessageProcessor:
         mode = user.current_mode
         
         # Save user message to history
-        db_service.add_message(phone, "user", text)
+        db_service.add_message(phone, "user", text, mode=mode)
         
         # Global commands
         if text.lower() in ["menu", "hi", "hello", "start", "restart"]:
@@ -72,8 +72,6 @@ class MessageProcessor:
 
         # Handle based on mode
         if mode == "menu":
-            # If in menu mode but types text, treat as general chat or re-show menu
-            # For now, let's just show the menu again to guide them
             await self._send_main_menu(phone)
             
         elif mode == "roleplay":
@@ -101,7 +99,7 @@ class MessageProcessor:
                 
                 # Send opening line
                 await whatsapp_service.send_text_message(phone, f"*{scenario.title}*\n\n{scenario.opening_line}")
-                db_service.add_message(phone, "bot", scenario.opening_line)
+                db_service.add_message(phone, "assistant", scenario.opening_line, mode="roleplay")
             else:
                 await whatsapp_service.send_text_message(phone, "No scenarios found. Please contact admin.")
                 
@@ -116,6 +114,7 @@ class MessageProcessor:
     async def _send_main_menu(self, phone: str):
         """Send the main menu with buttons"""
         # Reset mode to menu
+        # Todo: Consider if we want this user state change
         db_service.update_user_mode(phone, "menu")
         
         await whatsapp_service.send_interactive_buttons(
@@ -143,14 +142,16 @@ class MessageProcessor:
         
         # Send and save
         await whatsapp_service.send_text_message(phone, response_text)
-        db_service.add_message(phone, "bot", response_text)
+        db_service.add_message(phone, "assistant", response_text, mode="roleplay")
 
     async def _handle_chat_flow(self, user: Any, text: str):
         """Handle conversation in random chat mode"""
         phone = user.phone_number
         
         # Get history
+        print("Fetching recent messages for chat flow...")
         history_objs = db_service.get_recent_messages(phone, limit=10)
+        print("Received recent messages for chat flow...")
         history = [{"role": msg.role, "content": msg.content} for msg in history_objs]
         
         # Generate response
@@ -158,7 +159,7 @@ class MessageProcessor:
         
         # Send and save
         await whatsapp_service.send_text_message(phone, response_text)
-        db_service.add_message(phone, "bot", response_text)
+        db_service.add_message(phone, "assistant", response_text, mode="random_chat")
 
 # Global instance
 message_processor = MessageProcessor()

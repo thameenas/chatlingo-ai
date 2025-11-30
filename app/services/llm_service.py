@@ -1,19 +1,17 @@
 """
 LLM Service for Chatlingo AI
 
-Handles interactions with OpenAI for generating conversational responses.
+Handles interactions with LLM providers (OpenAI, OpenRouter) using a strategy pattern.
 """
 
 import logging
 import os
+from abc import ABC, abstractmethod
 from typing import List, Dict, Any
 from openai import AsyncOpenAI
 from app.config import settings
 
 logger = logging.getLogger(__name__)
-
-# Initialize OpenAI client
-client = AsyncOpenAI(api_key=settings.openai_api_key)
 
 def load_prompt(filename: str) -> str:
     """Load a prompt from the prompts directory"""
@@ -32,25 +30,31 @@ def load_prompt(filename: str) -> str:
 BASE_SYSTEM_PROMPT = load_prompt("base_system.txt")
 ROLEPLAY_SYSTEM_PROMPT = load_prompt("roleplay_system.txt")
 
-class LLMService:
-    """Service for generating AI responses"""
+class BaseLLMService(ABC):
+    """Abstract base class for LLM services"""
     
+    @abstractmethod
     async def get_chat_response(self, history: List[Dict[str, str]]) -> str:
-        """
-        Generate a response for general chat/menu mode.
-        
-        Args:
-            history: List of message dicts [{'role': 'user', 'content': '...'}, ...]
-            
-        Returns:
-            Generated response string
-        """
+        pass
+
+    @abstractmethod
+    async def get_roleplay_response(self, history: List[Dict[str, str]], scenario: Dict[str, Any]) -> str:
+        pass
+
+class OpenAIService(BaseLLMService):
+    """Standard OpenAI implementation"""
+    
+    def __init__(self):
+        self.client = AsyncOpenAI(api_key=settings.openai_api_key)
+        self.model = "gpt-4o-mini" # Default for OpenAI
+
+    async def get_chat_response(self, history: List[Dict[str, str]]) -> str:
         try:
             messages = [{"role": "system", "content": BASE_SYSTEM_PROMPT}]
             messages.extend(history)
             
-            response = await client.chat.completions.create(
-                model="gpt-4o-mini",
+            response = await self.client.chat.completions.create(
+                model=self.model,
                 messages=messages,
                 temperature=0.7,
                 max_tokens=150
@@ -62,23 +66,8 @@ class LLMService:
             logger.error(f"OpenAI API Error: {str(e)}")
             return "Ayyo! Something went wrong with my brain. Please try again later, maadi."
 
-    async def get_roleplay_response(
-        self, 
-        history: List[Dict[str, str]], 
-        scenario: Dict[str, Any]
-    ) -> str:
-        """
-        Generate a response for roleplay mode.
-        
-        Args:
-            history: List of message dicts
-            scenario: Scenario details (title, persona, situation)
-            
-        Returns:
-            Generated response string
-        """
+    async def get_roleplay_response(self, history: List[Dict[str, str]], scenario: Dict[str, Any]) -> str:
         try:
-            # Format the specific system prompt for this scenario
             system_prompt = ROLEPLAY_SYSTEM_PROMPT.format(
                 scenario_title=scenario.get('title', 'General Chat'),
                 bot_persona=scenario.get('bot_persona', 'Local Bangalorean'),
@@ -88,10 +77,10 @@ class LLMService:
             messages = [{"role": "system", "content": system_prompt}]
             messages.extend(history)
             
-            response = await client.chat.completions.create(
-                model="gpt-4o-mini",
+            response = await self.client.chat.completions.create(
+                model=self.model,
                 messages=messages,
-                temperature=0.8, # Slightly higher creativity for roleplay
+                temperature=0.8,
                 max_tokens=200
             )
             
@@ -100,6 +89,80 @@ class LLMService:
         except Exception as e:
             logger.error(f"OpenAI Roleplay Error: {str(e)}")
             return "Swalpa technical issue ide. Let's continue in a bit!"
+
+class OpenRouterService(BaseLLMService):
+    """OpenRouter implementation with custom headers and model routing"""
+    
+    def __init__(self):
+        self.client = AsyncOpenAI(
+            base_url=settings.openrouter_base_url,
+            api_key=settings.openrouter_api_key,
+        )
+        self.model = settings.llm_model
+
+    async def get_chat_response(self, history: List[Dict[str, str]]) -> str:
+        try:
+            messages = [{"role": "system", "content": BASE_SYSTEM_PROMPT}]
+            messages.extend(history)
+            
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                temperature=0.7,
+                max_tokens=150
+            )
+            
+            return response.choices[0].message.content
+            
+        except Exception as e:
+            logger.error(f"OpenRouter API Error: {str(e)}")
+            return "Ayyo! Something went wrong with my brain. Please try again later."
+
+    async def get_roleplay_response(self, history: List[Dict[str, str]], scenario: Dict[str, Any]) -> str:
+        try:
+            system_prompt = ROLEPLAY_SYSTEM_PROMPT.format(
+                scenario_title=scenario.get('title', 'General Chat'),
+                bot_persona=scenario.get('bot_persona', 'Local Bangalorean'),
+                situation_seed=scenario.get('situation_seed', 'Casual conversation')
+            )
+            
+            messages = [{"role": "system", "content": system_prompt}]
+            messages.extend(history)
+            
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                temperature=0.8,
+                max_tokens=200
+            )
+            
+            return response.choices[0].message.content
+            
+        except Exception as e:
+            logger.error(f"OpenRouter Error: {str(e)}")
+            return "Swalpa technical issue ide. Let's continue in a bit!"
+
+class LLMService:
+    """Main service wrapper that delegates to the configured provider"""
+    
+    def __init__(self):
+        self.provider: BaseLLMService = self._initialize_provider()
+        logger.info(f"LLM Service initialized with provider: {settings.llm_provider}")
+
+    def _initialize_provider(self) -> BaseLLMService:
+        if settings.llm_provider == "openrouter":
+            if not settings.openrouter_api_key:
+                logger.warning("OpenRouter provider selected but no API key found. Falling back to OpenAI.")
+                return OpenAIService()
+            return OpenRouterService()
+        else:
+            return OpenAIService()
+    
+    async def get_chat_response(self, history: List[Dict[str, str]]) -> str:
+        return await self.provider.get_chat_response(history)
+
+    async def get_roleplay_response(self, history: List[Dict[str, str]], scenario: Dict[str, Any]) -> str:
+        return await self.provider.get_roleplay_response(history, scenario)
 
 # Global instance
 llm_service = LLMService()
