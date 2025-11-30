@@ -19,10 +19,18 @@ class ButtonReply(BaseModel):
     title: str
 
 
+class ListReply(BaseModel):
+    """List reply from interactive message"""
+    id: str
+    title: str
+    description: Optional[str] = None
+
+
 class InteractiveObject(BaseModel):
     """Interactive message (buttons, lists, etc.)"""
     type: str
     button_reply: Optional[ButtonReply] = None
+    list_reply: Optional[ListReply] = None
 
 
 class WhatsAppMessage(BaseModel):

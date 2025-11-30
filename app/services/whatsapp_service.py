@@ -135,5 +135,47 @@ class WhatsAppService:
         result = await self._send_request("messages", payload)
         return result is not None
 
+    async def send_interactive_list_message(self, to_phone: str, body_text: str, button_text: str, sections: List[Dict[str, Any]]) -> bool:
+        """
+        Send a message with a list menu (up to 10 items).
+        
+        Args:
+            to_phone: Recipient's phone number
+            body_text: Main text of the message
+            button_text: Text for the menu button (e.g. "Select Scenario")
+            sections: List of sections, where each section has 'title' and 'rows'.
+                      Each row has 'id', 'title', and optional 'description'.
+                      e.g. [
+                          {
+                              "title": "Section 1",
+                              "rows": [
+                                  {"id": "row1", "title": "Option 1", "description": "Desc 1"}
+                              ]
+                          }
+                      ]
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        payload = {
+            "messaging_product": "whatsapp",
+            "recipient_type": "individual",
+            "to": to_phone,
+            "type": "interactive",
+            "interactive": {
+                "type": "list",
+                "body": {
+                    "text": body_text
+                },
+                "action": {
+                    "button": button_text,
+                    "sections": sections
+                }
+            }
+        }
+        
+        result = await self._send_request("messages", payload)
+        return result is not None
+
 # Global instance
 whatsapp_service = WhatsAppService()

@@ -70,7 +70,7 @@ class MessageProcessor:
             await self._send_main_menu(phone)
             return
 
-        # Handle based on mode
+        # Handle based on current mode
         if mode == "menu":
             await self._send_main_menu(phone)
             
@@ -85,30 +85,76 @@ class MessageProcessor:
             await self._send_main_menu(phone)
 
     async def _handle_interactive_message(self, user: Any, interactive: Any):
-        """Handle button clicks"""
+        """Handle button clicks and list selections"""
         phone = user.phone_number
-        button_id = interactive.button_reply.id
         
-        if button_id == "roleplay_start":
-            # Switch to roleplay mode
-            # For MVP, let's pick the first scenario automatically or list them
-            # Let's list scenarios (simplified for now: just start Scenario 1)
-            scenario = db_service.get_scenario_by_id(1)
-            if scenario:
-                db_service.update_user_mode(phone, "roleplay", scenario_id=1)
-                
-                # Send opening line
-                await whatsapp_service.send_text_message(phone, f"*{scenario.title}*\n\n{scenario.opening_line}")
-                db_service.add_message(phone, "assistant", scenario.opening_line, mode="roleplay")
-            else:
-                await whatsapp_service.send_text_message(phone, "No scenarios found. Please contact admin.")
-                
-        elif button_id == "random_chat":
-            db_service.update_user_mode(phone, "random_chat")
-            await whatsapp_service.send_text_message(phone, "Banni! Let's have a cup of coffee and chat. What's on your mind?")
+        # Handle Button Replies
+        if interactive.type == "button_reply":
+            button_id = interactive.button_reply.id
             
-        elif button_id == "sos_helper":
-            await whatsapp_service.send_text_message(phone, "🚑 SOS Helper coming soon! (This feature is under construction)")
+            if button_id == "roleplay_start":
+                # Fetch all scenarios
+                scenarios = db_service.get_all_scenarios()
+                
+                if not scenarios:
+                    await whatsapp_service.send_text_message(phone, "No scenarios found. Please contact admin.")
+                    return
+
+                # Create list sections
+                rows = []
+                for scenario in scenarios:
+                    rows.append({
+                        "id": f"scenario_{scenario.id}",
+                        "title": scenario.title[:24], # WhatsApp limit 24 chars
+                    })
+                
+                sections = [{
+                    "title": "Available Scenarios",
+                    "rows": rows
+                }]
+                
+                await whatsapp_service.send_interactive_list_message(
+                    phone,
+                    "Choose a scenario to practice:",
+                    "Select Scenario",
+                    sections
+                )
+                
+            elif button_id == "random_chat":
+                await self._handle_random_chat_start(phone)
+                
+            elif button_id == "sos_helper":
+                await whatsapp_service.send_text_message(phone, "🚑 SOS Helper coming soon! (This feature is under construction)")
+                await self._send_main_menu(phone)
+
+        # Handle List Replies
+        elif interactive.type == "list_reply":
+            selection_id = interactive.list_reply.id
+            
+            if selection_id.startswith("scenario_"):
+                try:
+                    scenario_id = int(selection_id.split("_")[1])
+                    await self._start_scenario(phone, scenario_id)
+                except ValueError:
+                    logger.error(f"Invalid scenario ID format: {selection_id}")
+                    await self._send_main_menu(phone)
+
+    async def _handle_random_chat_start(self, phone: str):
+        """Start random chat mode"""
+        db_service.update_user_mode(phone, "random_chat")
+        await whatsapp_service.send_text_message(phone, "Banni! Let's have a cup of coffee and chat. What's on your mind?")
+
+    async def _start_scenario(self, phone: str, scenario_id: int):
+        """Start a specific roleplay scenario"""
+        scenario = db_service.get_scenario_by_id(scenario_id)
+        if scenario:
+            db_service.update_user_mode(phone, "roleplay", scenario_id=scenario_id)
+            
+            # Send opening line
+            await whatsapp_service.send_text_message(phone, f"*{scenario.title}*\n\n{scenario.opening_line}")
+            db_service.add_message(phone, "assistant", scenario.opening_line, mode="roleplay")
+        else:
+            await whatsapp_service.send_text_message(phone, "Scenario not found.")
             await self._send_main_menu(phone)
 
     async def _send_main_menu(self, phone: str):
@@ -126,6 +172,13 @@ class MessageProcessor:
     async def _handle_roleplay_flow(self, user: Any, text: str):
         """Handle conversation in roleplay mode"""
         phone = user.phone_number
+        
+        # Check for exit commands
+        if text.lower().strip() in ["exit", "quit", "stop", "menu", "end"]:
+            await whatsapp_service.send_text_message(phone, "Ending roleplay session. Great practice!")
+            await self._send_main_menu(phone)
+            return
+
         scenario_id = user.current_scenario_id
         
         scenario = db_service.get_scenario_by_id(scenario_id)
@@ -149,9 +202,7 @@ class MessageProcessor:
         phone = user.phone_number
         
         # Get history
-        print("Fetching recent messages for chat flow...")
         history_objs = db_service.get_recent_messages(phone, limit=10)
-        print("Received recent messages for chat flow...")
         history = [{"role": msg.role, "content": msg.content} for msg in history_objs]
         
         # Generate response
