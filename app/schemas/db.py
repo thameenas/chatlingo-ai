@@ -28,7 +28,10 @@ class ScenarioSchema(BaseModel):
 
 class ChatMessageSchema(BaseModel):
     """Chat message model - represents a single message in conversation"""
+    phone_number: str
     role: str  # 'user' or 'bot'
+    mode: str   # e.g., 'menu', 'roleplay'
+    scenario_id: Optional[int] = None 
     content: str
     created_at: datetime
 
