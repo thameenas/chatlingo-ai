@@ -19,8 +19,8 @@ class Settings(BaseSettings):
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     
     # LLM Configuration
-    llm_provider: Literal["openai", "openrouter"] = "openai"
-    llm_model: str = "gpt-4o-mini"
+    llm_provider: Literal["openai", "openrouter"] = "openrouter"
+    llm_model: str = "anthropic/claude-3.5-sonnet"
     
     
     
