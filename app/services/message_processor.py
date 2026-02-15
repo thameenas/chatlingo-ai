@@ -1,16 +1,17 @@
 """
 Message Processor for Chatlingo AI
 
-Core business logic that orchestrates the flow between WhatsApp, Database, and LLM.
+WhatsApp transport layer - handles webhook processing and message routing.
+Uses ConversationEngine for core conversation logic.
 """
 
 import logging
-import uuid
-from typing import Optional, Dict, Any
-from app.schemas.whatsapp import WhatsAppWebhook, WhatsAppMessage
+from typing import Any
+from app.schemas.whatsapp import WhatsAppWebhook
 from app.services.whatsapp_service import whatsapp_service
 from app.services.llm_service import llm_service
 from app.services import supabase_service
+from app.services.conversation_engine import conversation_engine
 
 logger = logging.getLogger(__name__)
 
@@ -157,22 +158,16 @@ class MessageProcessor:
 
     async def _start_scenario(self, phone: str, scenario_id: int):
         """Start a specific practice scenario"""
-        scenario = supabase_service.get_scenario_by_id(scenario_id)
+        scenario = conversation_engine.get_scenario(scenario_id)
         if scenario:
-            # Generate new session ID
-            session_id = str(uuid.uuid4())
+            # Start scenario session via engine
+            session_id = conversation_engine.start_scenario(phone, scenario_id)
             
-            supabase_service.update_user_mode(phone, "practice_scenario", scenario_id=scenario_id, session_id=session_id)
+            # Generate opening via engine
+            response_text = await conversation_engine.generate_opening(phone, scenario, session_id)
             
-            # Use LLM to generate the opening line dynamically based on the scenario
-            # This ensures it follows the system prompt rules (Kanglish + Options)
-            # We pass an empty history, but the system prompt has the scenario details
-            history = [] 
-            response_text = await llm_service.get_practice_scenario_response(history, scenario.model_dump())
-            
-            # Send opening line
+            # Send opening line (WhatsApp-specific)
             await whatsapp_service.send_text_message(phone, f"*{scenario.title}*\n\n{response_text}")
-            supabase_service.add_message(phone, "assistant", response_text, mode="practice_scenario", session_id=session_id, scenario_id=scenario_id)
         else:
             await whatsapp_service.send_text_message(phone, "Scenario not found.")
             await self._send_main_menu(phone)
@@ -200,23 +195,21 @@ class MessageProcessor:
             return
 
         scenario_id = user.current_scenario_id
+        session_id = getattr(user, 'current_session_id', None)
         
-        scenario = supabase_service.get_scenario_by_id(scenario_id)
+        scenario = conversation_engine.get_scenario(scenario_id)
         if not scenario:
             await self._send_main_menu(phone)
             return
 
-        # Get history filtered by current session
-        session_id = getattr(user, 'current_session_id', None)
-        history_objs = supabase_service.get_recent_messages(phone, limit=50, session_id=session_id)
-        history = [{"role": msg.role, "content": msg.content} for msg in history_objs]
+        # User message already saved in _handle_text_message
+        # Generate response via engine
+        response_text = await conversation_engine.process_message(
+            phone, scenario, session_id
+        )
         
-        # Generate response
-        response_text = await llm_service.get_practice_scenario_response(history, scenario.model_dump())
-        
-        # Send and save
+        # Send response (WhatsApp-specific)
         await whatsapp_service.send_text_message(phone, response_text)
-        supabase_service.add_message(phone, "assistant", response_text, mode="practice_scenario", session_id=session_id, scenario_id=scenario_id)
 
     async def _handle_chat_flow(self, user: Any, text: str):
         """Handle conversation in random chat mode"""
