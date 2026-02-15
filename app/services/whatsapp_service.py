@@ -33,31 +33,36 @@ class WhatsAppService:
             Response JSON or None if failed
         """
         url = f"{self.base_url}/{endpoint}"
+        logger.info(f"[WHATSAPP] 📤 Sending request to {endpoint}: type={payload.get('type', 'N/A')}, to={payload.get('to', 'N/A')}")
+        logger.debug(f"[WHATSAPP] Full payload: {payload}")
         
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(url, headers=self.headers, json=payload)
                 
                 if response.status_code not in [200, 201]:
-                    logger.error(f"WhatsApp API Error: {response.status_code} - {response.text}")
+                    logger.error(f"[WHATSAPP] ❌ API Error: status={response.status_code}, response={response.text}")
                     return None
                 
-                return response.json()
+                result = response.json()
+                logger.info(f"[WHATSAPP] ✅ API Success: status={response.status_code}")
+                logger.debug(f"[WHATSAPP] Response body: {result}")
+                return result
                 
+        except httpx.TimeoutException:
+            logger.error(f"[WHATSAPP] ❌ Request timed out for {endpoint}")
+            return None
         except Exception as e:
-            logger.error(f"Failed to send request to WhatsApp: {str(e)}")
+            logger.error(f"[WHATSAPP] ❌ Failed to send request: {str(e)}")
+            import traceback
+            logger.error(f"[WHATSAPP] ❌ Traceback:\n{traceback.format_exc()}")
             return None
 
     async def mark_message_as_read(self, message_id: str) -> bool:
         """
         Mark a received message as read.
-        
-        Args:
-            message_id: The ID of the message to mark as read
-            
-        Returns:
-            True if successful, False otherwise
         """
+        logger.info(f"[WHATSAPP] 👁️ Marking message as read: {message_id}")
         payload = {
             "messaging_product": "whatsapp",
             "status": "read",
@@ -65,19 +70,12 @@ class WhatsAppService:
         }
         
         result = await self._send_request("messages", payload)
-        return result is not None
+        success = result is not None
+        logger.info(f"[WHATSAPP] Mark as read: success={success}")
+        return success
 
     async def send_text_message(self, to_phone: str, content: str) -> bool:
-        """
-        Send a standard text message.
-        
-        Args:
-            to_phone: Recipient's phone number
-            content: Text content to send
-            
-        Returns:
-            True if successful, False otherwise
-        """
+        """Send a standard text message."""
         payload = {
             "messaging_product": "whatsapp",
             "recipient_type": "individual",
@@ -90,21 +88,12 @@ class WhatsAppService:
         }
         
         result = await self._send_request("messages", payload)
-        return result is not None
+        success = result is not None
+        logger.info(f"[WHATSAPP] Text message sent: success={success}")
+        return success
 
     async def send_interactive_buttons(self, to_phone: str, body_text: str, buttons: List[Dict[str, str]]) -> bool:
-        """
-        Send a message with interactive buttons (max 3).
-        
-        Args:
-            to_phone: Recipient's phone number
-            body_text: Main text of the message
-            buttons: List of dicts with 'id' and 'title' keys
-                     e.g. [{'id': 'btn1', 'title': 'Button 1'}]
-            
-        Returns:
-            True if successful, False otherwise
-        """
+        """Send a message with interactive buttons (max 3)."""
         # Format buttons for WhatsApp API
         formatted_buttons = []
         for btn in buttons:
@@ -133,30 +122,13 @@ class WhatsAppService:
         }
         
         result = await self._send_request("messages", payload)
-        return result is not None
+        success = result is not None
+        logger.info(f"[WHATSAPP] Interactive buttons sent: success={success}")
+        return success
 
     async def send_interactive_list_message(self, to_phone: str, body_text: str, button_text: str, sections: List[Dict[str, Any]]) -> bool:
-        """
-        Send a message with a list menu (up to 10 items).
-        
-        Args:
-            to_phone: Recipient's phone number
-            body_text: Main text of the message
-            button_text: Text for the menu button (e.g. "Select Scenario")
-            sections: List of sections, where each section has 'title' and 'rows'.
-                      Each row has 'id', 'title', and optional 'description'.
-                      e.g. [
-                          {
-                              "title": "Section 1",
-                              "rows": [
-                                  {"id": "row1", "title": "Option 1", "description": "Desc 1"}
-                              ]
-                          }
-                      ]
-            
-        Returns:
-            True if successful, False otherwise
-        """
+        """Send a message with a list menu (up to 10 items)."""
+        logger.info(f"[WHATSAPP] 📋 Sending interactive list to {to_phone}: button='{button_text}'")
         payload = {
             "messaging_product": "whatsapp",
             "recipient_type": "individual",
@@ -175,7 +147,9 @@ class WhatsAppService:
         }
         
         result = await self._send_request("messages", payload)
-        return result is not None
+        success = result is not None
+        logger.info(f"[WHATSAPP] Interactive list sent: success={success}")
+        return success
 
 # Global instance
 whatsapp_service = WhatsAppService()

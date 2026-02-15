@@ -5,12 +5,15 @@ Core conversation logic abstracted from transport layer (WhatsApp/CLI).
 Handles LLM interactions and conversation flow.
 """
 
+import logging
 import uuid
-from typing import List, Dict, Optional
+from typing import List, Optional
 
-from app.services.llm_service import llm_service
-from app.services import supabase_service
 from app.schemas.db import ScenarioSchema
+from app.services import supabase_service
+from app.services.llm_service import llm_service
+
+logger = logging.getLogger(__name__)
 
 
 class ConversationEngine:
@@ -22,41 +25,47 @@ class ConversationEngine:
     @staticmethod
     def get_all_scenarios() -> List[ScenarioSchema]:
         """Get all available scenarios from database"""
-        return supabase_service.get_all_scenarios()
+        logger.info("[ENGINE] Fetching all scenarios")
+        scenarios = supabase_service.get_all_scenarios()
+        logger.info(f"[ENGINE] Found {len(scenarios)} scenarios")
+        return scenarios
     
     @staticmethod
     def get_scenario(scenario_id: int) -> Optional[ScenarioSchema]:
         """Get a specific scenario by ID"""
-        return supabase_service.get_scenario_by_id(scenario_id)
+        logger.info(f"[ENGINE] Fetching scenario id={scenario_id}")
+        scenario = supabase_service.get_scenario_by_id(scenario_id)
+        logger.info(f"[ENGINE] Scenario found: {scenario is not None}")
+        return scenario
     
     @staticmethod
     def start_scenario(phone: str, scenario_id: int) -> str:
         """Start a scenario session, returns new session_id"""
         session_id = str(uuid.uuid4())
+        logger.info(f"[ENGINE] Starting scenario: phone={phone}, scenario_id={scenario_id}, session_id={session_id}")
         supabase_service.update_user_mode(
-            phone, 
-            "practice_scenario", 
-            scenario_id=scenario_id, 
+            phone,
+            "practice_scenario",
+            scenario_id=scenario_id,
             session_id=session_id
         )
         return session_id
     
     @staticmethod
     async def generate_opening(
-        phone: str, 
-        scenario: ScenarioSchema, 
+        phone: str,
+        scenario: ScenarioSchema,
         session_id: str
     ) -> str:
         """Generate scenario opening line using LLM"""
         response = await llm_service.get_practice_scenario_response(
-            [], 
+            [],
             scenario.model_dump()
         )
-        
         supabase_service.add_message(
-            phone, 
-            "assistant", 
-            response, 
+            phone,
+            "assistant",
+            response,
             mode="practice_scenario",
             session_id=session_id,
             scenario_id=scenario.id
@@ -101,12 +110,13 @@ class ConversationEngine:
             {"role": msg.role, "content": msg.content}
             for msg in history_objs
         ]
-        
         # Generate LLM response
+        logger.info("[ENGINE] Calling LLM for scenario response...")
         response = await llm_service.get_practice_scenario_response(
             history,
             scenario.model_dump()
         )
+        logger.info(f"[ENGINE] LLM response received")
         
         # Save assistant response
         supabase_service.add_message(
@@ -117,7 +127,6 @@ class ConversationEngine:
             session_id=session_id,
             scenario_id=scenario.id
         )
-        
         return response
 
 
