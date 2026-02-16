@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     # Telegram Bot Configuration
     telegram_bot_token: str | None = None
     telegram_webhook_secret: str | None = None
+    telegram_allowed_user_ids: str | None = None  # Comma-separated list of allowed Telegram user IDs
     
     # Supabase Configuration
     supabase_url: str
@@ -48,6 +49,20 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore"
     )
+    
+    def get_allowed_telegram_user_ids(self) -> set[int]:
+        """Parse and return set of allowed Telegram user IDs"""
+        if not self.telegram_allowed_user_ids:
+            return set()
+        
+        try:
+            # Parse comma-separated string to set of integers
+            return {int(uid.strip()) for uid in self.telegram_allowed_user_ids.split(',') if uid.strip()}
+        except ValueError:
+            # Log warning and return empty set if parsing fails
+            import logging
+            logging.warning("Invalid TELEGRAM_ALLOWED_USER_IDS format. Expected comma-separated integers.")
+            return set()
 
 
 # Global settings instance
