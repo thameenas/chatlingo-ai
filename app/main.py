@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from app.config import settings
 from app.routers import webhook
+from app.routers import telegram_webhook
 import logging
 
 # Configure logging - force output to stdout for Render visibility
@@ -30,13 +31,14 @@ logger.info(f"🚀 Chatlingo AI starting up | env={settings.environment} | debug
 # Initialize FastAPI app
 app = FastAPI(
     title="Chatlingo AI",
-    description="WhatsApp chatbot for teaching Bangalore Kannada in Kanglish",
+    description="Multi-platform chatbot for teaching Bangalore Kannada in Kanglish (WhatsApp & Telegram)",
     version="0.1.0",
     debug=settings.debug
 )
 
 # Include routers
-app.include_router(webhook.router)
+app.include_router(webhook.router)  # WhatsApp webhook
+app.include_router(telegram_webhook.router)  # Telegram webhook
 
 @app.get("/health")
 async def health_check():
