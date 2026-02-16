@@ -25,9 +25,13 @@ class Settings(BaseSettings):
     
     
     # WhatsApp Cloud API Configuration
-    whatsapp_access_token: str
-    whatsapp_phone_id: str
-    whatsapp_verify_token: str
+    whatsapp_access_token: str | None = None
+    whatsapp_phone_id: str | None = None
+    whatsapp_verify_token: str | None = None
+    
+    # Telegram Bot Configuration
+    telegram_bot_token: str | None = None
+    telegram_webhook_secret: str | None = None
     
     # Supabase Configuration
     supabase_url: str
