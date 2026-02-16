@@ -2,13 +2,13 @@
 """
 CLI Interface for Chatlingo AI - Practice Scenarios
 
-Reuses ConversationEngine for core logic. Input/output via terminal.
+Direct service integration (no conversation engine wrapper).
 
 Usage:
     Interactive mode:
         python cli.py
     
-    Non-interactive mode (for LLM testing):
+    Non-interactive mode (for testing):
         python cli.py --list                      # List scenarios
         python cli.py --start 1                   # Start scenario 1, returns session_id
         python cli.py --session <id> --message "hello"  # Send message
@@ -19,9 +19,10 @@ import asyncio
 import argparse
 import json
 import os
+import uuid
 
-from app.services.conversation_engine import conversation_engine
 from app.services import supabase_service
+from app.services.llm_service import llm_service
 
 # File to persist session info for non-interactive mode
 SESSION_FILE = "/tmp/chatlingo_session.json"
@@ -49,7 +50,7 @@ def clear_session():
 
 async def list_scenarios():
     """List available scenarios"""
-    scenarios = conversation_engine.get_all_scenarios()
+    scenarios = supabase_service.get_all_scenarios()
     if not scenarios:
         print("No scenarios found.")
         return
@@ -62,7 +63,7 @@ async def list_scenarios():
 
 async def start_scenario(scenario_id: int, phone: str):
     """Start a new scenario session"""
-    scenario = conversation_engine.get_scenario(scenario_id)
+    scenario = supabase_service.get_scenario_by_id(scenario_id)
     if not scenario:
         print(f"❌ Scenario {scenario_id} not found")
         return
@@ -70,11 +71,14 @@ async def start_scenario(scenario_id: int, phone: str):
     # Ensure user exists
     supabase_service.get_or_create_user(phone)
     
-    # Start session
-    session_id = conversation_engine.start_scenario(phone, scenario.id)
+    # Create session and update user state
+    session_id = str(uuid.uuid4())
+    supabase_service.update_user_mode(phone, "practice_scenario", scenario_id=scenario.id, session_id=session_id)
     
-    # Generate opening
-    opening = await conversation_engine.generate_opening(phone, scenario, session_id)
+    # Generate opening via LLM
+    opening = await llm_service.get_practice_scenario_response([], scenario.model_dump())
+    supabase_service.add_message(phone, "assistant", opening, mode="practice_scenario", 
+                                session_id=session_id, scenario_id=scenario.id)
     
     # Save session info
     save_session({
@@ -101,7 +105,7 @@ async def send_message(message: str, phone: str):
         print("❌ No active session. Use --start <scenario_id> first.")
         return
     
-    scenario = conversation_engine.get_scenario(session["scenario_id"])
+    scenario = supabase_service.get_scenario_by_id(session["scenario_id"])
     if not scenario:
         print("❌ Scenario not found")
         return
@@ -109,10 +113,18 @@ async def send_message(message: str, phone: str):
     session_id = session["session_id"]
     
     # Save user message
-    conversation_engine.save_user_message(phone, message, scenario.id, session_id)
+    supabase_service.add_message(phone, "user", message, mode="practice_scenario", 
+                                session_id=session_id, scenario_id=scenario.id)
     
-    # Generate response
-    response = await conversation_engine.process_message(phone, scenario, session_id)
+    # Get conversation history and generate response
+    history_objs = supabase_service.get_recent_messages(phone, limit=50, session_id=session_id)
+    history = [{"role": msg.role, "content": msg.content} for msg in history_objs]
+    
+    response = await llm_service.get_practice_scenario_response(history, scenario.model_dump())
+    
+    # Save assistant response
+    supabase_service.add_message(phone, "assistant", response, mode="practice_scenario",
+                                session_id=session_id, scenario_id=scenario.id)
     
     print(f"\n👤 You: {message}")
     print("-" * 40)
@@ -137,7 +149,7 @@ async def interactive_mode(phone: str):
     print("-" * 40)
     
     # Fetch scenarios from database
-    scenarios = conversation_engine.get_all_scenarios()
+    scenarios = supabase_service.get_all_scenarios()
     if not scenarios:
         print("No scenarios found in database.")
         return
@@ -150,7 +162,7 @@ async def interactive_mode(phone: str):
     # Select scenario
     try:
         choice = int(input("\nEnter scenario number: "))
-        scenario = conversation_engine.get_scenario(choice)
+        scenario = supabase_service.get_scenario_by_id(choice)
         if not scenario:
             print("Invalid scenario")
             return
@@ -163,14 +175,17 @@ async def interactive_mode(phone: str):
     print("-" * 40)
     print("Type 'exit' to quit\n")
     
-    # Ensure user exists in DB (same as WhatsApp flow)
+    # Ensure user exists in DB
     supabase_service.get_or_create_user(phone)
     
-    # Start scenario session
-    session_id = conversation_engine.start_scenario(phone, scenario.id)
+    # Create session and update user state
+    session_id = str(uuid.uuid4())
+    supabase_service.update_user_mode(phone, "practice_scenario", scenario_id=scenario.id, session_id=session_id)
     
     # Generate opening
-    opening = await conversation_engine.generate_opening(phone, scenario, session_id)
+    opening = await llm_service.get_practice_scenario_response([], scenario.model_dump())
+    supabase_service.add_message(phone, "assistant", opening, mode="practice_scenario",
+                                session_id=session_id, scenario_id=scenario.id)
     print(f"🤖 {scenario.bot_persona}: {opening}\n")
     
     # Conversation loop
@@ -181,12 +196,19 @@ async def interactive_mode(phone: str):
             break
         
         # Save user message first
-        conversation_engine.save_user_message(phone, user_input, scenario.id, session_id)
+        supabase_service.add_message(phone, "user", user_input, mode="practice_scenario",
+                                    session_id=session_id, scenario_id=scenario.id)
         
-        # Generate response
-        response = await conversation_engine.process_message(
-            phone, scenario, session_id
-        )
+        # Get history and generate response
+        history_objs = supabase_service.get_recent_messages(phone, limit=50, session_id=session_id)
+        history = [{"role": msg.role, "content": msg.content} for msg in history_objs]
+        
+        response = await llm_service.get_practice_scenario_response(history, scenario.model_dump())
+        
+        # Save assistant response
+        supabase_service.add_message(phone, "assistant", response, mode="practice_scenario",
+                                    session_id=session_id, scenario_id=scenario.id)
+        
         print(f"\n🤖 {scenario.bot_persona}: {response}\n")
 
 
